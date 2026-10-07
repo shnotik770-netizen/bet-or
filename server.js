@@ -40,7 +40,7 @@ db.teachers = db.teachers || [];
 db.bookings = db.bookings || [];
 db.sessions = db.sessions || {};
 // הגדרות שהמנהלת קובעת: תקופת הפעילות, ימי חופש ושעות השיעורים
-db.settings = Object.assign({ startDate: '', endDate: '', vacations: [], lessonTimes: [] }, db.settings);
+db.settings = Object.assign({ startDate: '', endDate: '', vacations: [], lessonTimes: [], weeklyLimit: 0 }, db.settings);
 
 function save() {
   const tmp = DB_FILE + '.tmp';
@@ -162,13 +162,32 @@ function publicBooking(b, ctx) {
 }
 
 function requireTeacher(ctx) { if (!ctx.teacher) throw new AuthError('יש להיכנס עם מספר הטלפון'); }
+/** Effective weekly limit for a teacher (0 = unlimited): her personal limit, else the general one. */
+function weeklyLimitOf(t) {
+  if (t && t.weeklyLimit > 0) return t.weeklyLimit;
+  return db.settings.weeklyLimit > 0 ? db.settings.weeklyLimit : 0;
+}
+function weekStartOf(date) { return addDays(date, -dow(date)); }
+function countInWeek(teacherId, date) {
+  const ws = weekStartOf(date), we = addDays(ws, 6);
+  return db.bookings.filter(b => b.teacherId === teacherId && b.date >= ws && b.date <= we).length;
+}
+/** Parse an admin-entered limit: '' or 0 = none, otherwise 1..30. */
+function parseLimit(v) {
+  if (v === '' || v == null) return 0;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 0 || n > 30) fail('מגבלת השעות צריכה להיות מספר שלם בין 0 ל־30');
+  return n;
+}
+
+function requireView(ctx) { if (!ctx.teacher && !ctx.admin && !ctx.guest) throw new AuthError('יש להיכנס עם מספר הטלפון'); }
 function requireAny(ctx) { if (!ctx.teacher && !ctx.admin) throw new AuthError('יש להיכנס עם מספר הטלפון'); }
 function requireAdmin(ctx) { if (!ctx.admin) throw new AuthError('קוד ניהול שגוי'); }
 function canManage(ctx, b) { return ctx.admin || (ctx.teacher && b.teacherId === ctx.teacher.id); }
 
 function resolveCtx(auth) {
   auth = auth || {};
-  const ctx = { teacher: null, admin: false };
+  const ctx = { teacher: null, admin: false, guest: !!auth.guest };
   if (ADMIN_CODE && auth.adminCode && safeEqual(auth.adminCode, ADMIN_CODE)) ctx.admin = true;
   const s = auth.token && Object.prototype.hasOwnProperty.call(db.sessions, auth.token) ? db.sessions[auth.token] : null;
   if (s) {
@@ -183,7 +202,7 @@ function adminData() {
   const from = addDays(w.today, -CONFIG.FEEDBACK_DAYS);
   return {
     today: w.today,
-    teachers: db.teachers.map(t => ({ id: t.id, name: t.name, phone: t.phone, active: t.active })),
+    teachers: db.teachers.map(t => ({ id: t.id, name: t.name, phone: t.phone, active: t.active, weeklyLimit: t.weeklyLimit || 0 })),
     settings: db.settings,
     lessonCount: CONFIG.LESSON_COUNT,
     bookings: db.bookings.filter(b => b.date >= from).map(b => publicBooking(b, null))
@@ -222,11 +241,12 @@ const api = {
   },
 
   async getState(ctx) {
-    requireAny(ctx);
+    requireView(ctx);
     const w = windowNow();
     return {
-      me: ctx.teacher ? { id: ctx.teacher.id, name: ctx.teacher.name } : null,
+      me: ctx.teacher ? { id: ctx.teacher.id, name: ctx.teacher.name, weeklyLimit: weeklyLimitOf(ctx.teacher) } : null,
       admin: ctx.admin,
+      guest: !ctx.teacher && !ctx.admin,
       window: w,
       config: {
         schoolName: CONFIG.SCHOOL_NAME, spaceName: CONFIG.SPACE_NAME, daysAhead: CONFIG.DAYS_AHEAD,
@@ -254,6 +274,10 @@ const api = {
     // No await between the check and the write, so concurrent requests cannot double-book.
     const taken = db.bookings.find(b => b.date === date && b.lesson === lesson);
     if (taken) fail('השעה הזו כבר תפוסה – ' + taken.teacher + ' השתבצה אליה');
+    const limit = weeklyLimitOf(t);
+    if (limit && !ctx.admin && countInWeek(t.id, date) >= limit) {
+      fail('הגעת למכסה של ' + (limit === 1 ? 'שעה אחת' : limit + ' שעות') + ' בשבוע הזה. אפשר לבטל שיבוץ אחר או לפנות להנהלה');
+    }
     db.bookings.push({
       id: crypto.randomUUID(), date, lesson, teacherId: t.id, teacher: t.name, className, topic,
       createdAt: new Date().toISOString(),
@@ -333,6 +357,7 @@ const api = {
     const name = clean(teacher.name, 40);
     const phone = normPhone(teacher.phone);
     const active = teacher.active !== false;
+    const weeklyLimit = parseLimit(teacher.weeklyLimit);
     if (!name) fail('יש למלא שם');
     if (!phone) fail('מספר הטלפון לא תקין');
     const existing = teacher.id ? teacherById(String(teacher.id)) : null;
@@ -341,10 +366,10 @@ const api = {
     const dup = db.teachers.find(t => t !== existing && t.phone === phone);
     if (dup) fail('מספר הטלפון כבר שייך ל' + dup.name);
     if (existing) {
-      existing.name = name; existing.phone = phone; existing.active = active;
+      existing.name = name; existing.phone = phone; existing.active = active; existing.weeklyLimit = weeklyLimit;
       db.bookings.forEach(b => { if (b.teacherId === existing.id) b.teacher = name; });
     } else {
-      db.teachers.push({ id: crypto.randomUUID(), name, phone, active });
+      db.teachers.push({ id: crypto.randomUUID(), name, phone, active, weeklyLimit });
     }
     save();
     return adminData();
@@ -392,6 +417,7 @@ const api = {
     if (startDate && endDate && endDate < startDate) fail('תאריך הסיום לפני תאריך ההתחלה');
     db.settings.startDate = startDate;
     db.settings.endDate = endDate;
+    if (req.weeklyLimit !== undefined) db.settings.weeklyLimit = parseLimit(req.weeklyLimit);
     if (Array.isArray(req.lessonTimes)) {
       db.settings.lessonTimes = Array.from({ length: CONFIG.LESSON_COUNT }, (_, i) => clean(req.lessonTimes[i], 20));
     }

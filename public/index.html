@@ -177,6 +177,9 @@
   .slot.mine::before {
     content: "שלי"; position: absolute; top: 6px; inset-inline-end: 8px; font-size: 10px; font-weight: 700; color: var(--gold-strong); letter-spacing: .5px;
   }
+  .slot.full { border: 1.5px dashed var(--line); background: transparent; justify-content: center; align-items: center; color: var(--ink-3); font-size: 13px; }
+  .tab .t-quota { font-size: 12px; margin-top: 4px; color: var(--gold-strong); font-weight: 600; }
+  .tab .t-quota.full { color: var(--danger); }
   .slot.empty { background: transparent; border-color: transparent; color: var(--ink-3); justify-content: center; align-items: center; }
   .is-locked .slot.empty, .is-closed .slot.empty { background: repeating-linear-gradient(-45deg, transparent 0 8px, var(--surface-2) 8px 10px); border-color: var(--line); }
   .is-past .slot.taken { opacity: .75; }
@@ -320,6 +323,7 @@
       <button class="btn primary" id="loginBtn">כניסה</button>
       <div class="login-err" id="loginErr" role="alert"></div>
     </form>
+    <button class="btn" id="guestEntry" type="button" style="width:100%;margin-top:4px">כניסה כאורח – צפייה בלוח בלבד</button>
     <div class="login-foot"><button class="linkish" id="adminEntry" type="button">כניסת הנהלה</button></div>
   </div>
 </section>
@@ -337,7 +341,7 @@
       </div>
       <nav class="nav" id="nav">
         <a href="#/">לוח שיבוצים</a>
-        <a href="#/feedback">משובים</a>
+        <a href="#/feedback" id="navFeedback">משובים</a>
         <a href="#/admin" id="navAdmin" hidden>ניהול</a>
       </nav>
       <div class="me" id="meBox"></div>
@@ -423,6 +427,9 @@
     </label>
     <label>מספר טלפון <span class="hint">(המורה נכנסת לאתר עם המספר הזה)</span>
       <input id="tPhone" type="tel" inputmode="tel" required maxlength="16" style="direction:ltr;text-align:right">
+    </label>
+    <label>מגבלת שעות בשבוע <span class="hint">(ריק = לפי ההגדרה הכללית)</span>
+      <input id="tLimit" type="number" min="0" max="30" step="1" inputmode="numeric">
     </label>
     <label class="check"><input type="checkbox" id="tActive" checked> פעילה (יכולה להיכנס ולהשתבץ)</label>
     <div class="dlg-actions">
@@ -539,6 +546,7 @@
   /* ---------- State & API ---------- */
   const S = {
     token: store.get('beitor.token') || '',
+    guest: store.get('beitor.guest') === '1',
     me: null,
     adminCode: store.sget('beitor.admin') || '',
     data: null,
@@ -557,7 +565,7 @@
     return fetch('api/' + fn, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ auth: { token: S.token, adminCode: S.adminCode }, args: args }),
+      body: JSON.stringify({ auth: { token: S.token, adminCode: S.adminCode, guest: S.guest }, args: args }),
     }).then(
       r => r.json().catch(() => ({ ok: false, error: 'שגיאת תקשורת' })),
       () => ({ ok: false, error: 'אין חיבור לשרת, נסי שוב' })
@@ -570,12 +578,14 @@
 
   function handleAuthLost() {
     S.token = ''; store.del('beitor.token');
+    S.guest = false; store.del('beitor.guest');
     S.adminCode = ''; store.sdel('beitor.admin');
     S.data = null; S.fb = null; S.adminData = null;
     showLogin();
   }
 
-  function loggedIn() { return !!(S.token || S.adminCode); }
+  function loggedIn() { return !!(S.token || S.adminCode || S.guest); }
+  function isGuest() { return !!(S.data && S.data.guest); }
 
   /* ---------- Login ---------- */
   function showLogin() {
@@ -593,10 +603,17 @@
     $('loginErr').textContent = '';
     call('login', phone).then(r => {
       S.token = r.token; store.set('beitor.token', r.token);
+      S.guest = false; store.del('beitor.guest');
       $('loginPhone').value = '';
       startApp();
     }).catch(e => { $('loginErr').textContent = errMsg(e); })
       .finally(() => { $('loginBtn').disabled = false; });
+  });
+
+  $('guestEntry').addEventListener('click', () => {
+    S.guest = true; store.set('beitor.guest', '1');
+    location.hash = '#/';
+    startApp();
   });
 
   $('adminEntry').addEventListener('click', () => { $('adminCode').value = ''; $('adminDlg').showModal(); });
@@ -646,16 +663,17 @@
   function render() {
     if (!S.data) return;
     let r = route();
-    if (r === 'admin' && !S.adminCode) { location.hash = '#/'; return; }
+    if ((r === 'admin' && !S.adminCode) || (r === 'feedback' && isGuest())) { location.hash = '#/'; return; }
     $('loading').hidden = true;
     $('navAdmin').hidden = !S.adminCode;
+    $('navFeedback').hidden = isGuest();
     Array.prototype.forEach.call($('nav').querySelectorAll('a'), a => {
       const target = a.getAttribute('href').replace(/^#\/?/, '') || 'schedule';
       if (target === r) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     fill($('meBox'),
-      S.me ? h('span', null, 'שלום, ', h('b', null, S.me.name)) : h('span', null, 'הנהלה'),
-      h('button', { class: 'pill', type: 'button', onclick: logout }, 'יציאה'));
+      S.me ? h('span', null, 'שלום, ', h('b', null, S.me.name)) : h('span', null, isGuest() ? 'צפייה כאורח' : 'הנהלה'),
+      h('button', { class: 'pill', type: 'button', onclick: logout }, isGuest() ? 'כניסה' : 'יציאה'));
     $('scheduleView').hidden = r !== 'schedule';
     $('feedbackView').hidden = r !== 'feedback';
     $('adminView').hidden = r !== 'admin';
@@ -699,9 +717,11 @@
     const weeks = weeksOf(w);
     if (S.weekIdx == null || S.weekIdx >= weeks.length) S.weekIdx = 0;
 
+    const limit = S.me && !S.adminCode ? S.me.weeklyLimit : 0;
     fill($('intro'),
-      h('span', null, 'בחרי שיעור פנוי כדי להשתבץ למרחב.'),
-      h('span', null, 'ההרשמה פתוחה עד ', h('strong', null, fmtLong(lastDay)), ' · בכל יום נפתח יום נוסף.'));
+      h('span', null, isGuest() ? 'צפייה בלוח השיבוצים של המרחב (ללא אפשרות עריכה).' : 'בחרי שיעור פנוי כדי להשתבץ למרחב.'),
+      h('span', null, 'ההרשמה פתוחה עד ', h('strong', null, fmtLong(lastDay)), ' · בכל יום נפתח יום נוסף.'),
+      limit ? h('span', null, 'אפשר להשתבץ עד ', h('strong', null, (limit === 1 ? 'שעה אחת' : limit + ' שעות') + ' בשבוע'), '.') : null);
 
     const mine = d.bookings.filter(b => b.mine && b.date >= w.today)
       .sort((a, b) => (a.date + a.lesson).localeCompare(b.date + b.lesson));
@@ -723,10 +743,20 @@
       },
         h('div', { class: 't-kicker' }, kicker),
         h('div', { class: 't-title' }, weekTitle(ws)),
-        h('div', { class: 't-sub' }, fmtShort(ws) + '–' + fmtShort(fri) + ' · ' + hebDate(ws) + ' – ' + hebDate(fri)));
+        h('div', { class: 't-sub' }, fmtShort(ws) + '–' + fmtShort(fri) + ' · ' + hebDate(ws) + ' – ' + hebDate(fri)),
+        limit ? h('div', { class: 't-quota' + (myCount(ws) >= limit ? ' full' : '') }, 'השיבוצים שלך: ' + myCount(ws) + ' מתוך ' + limit) : null);
     }));
 
     fill($('week'), renderWeek(weeks[S.weekIdx]));
+  }
+
+  function myCount(ws) {
+    const we = addDays(ws, 6);
+    return S.data.bookings.filter(b => b.mine && b.date >= ws && b.date <= we).length;
+  }
+  function quotaFull(date) {
+    const limit = S.me && !S.adminCode ? S.me.weeklyLimit : 0;
+    return !!limit && myCount(addDays(date, -dow(date))) >= limit;
   }
 
   function renderWeek(ws) {
@@ -773,6 +803,8 @@
           b.hasFeedback ? h('a', { class: 'link-btn fb', href: '#/feedback', onclick: () => { S.flashId = b.id; } }, '💬 משוב') : null,
           canCancel ? h('button', { class: 'link-btn', type: 'button', onclick: () => askCancel(b) }, 'ביטול שיבוץ') : null) : null);
     }
+    if (st === 'open' && isGuest()) return h('div', { class: 'slot empty' }, label, 'פנוי');
+    if (st === 'open' && quotaFull(date)) return h('div', { class: 'slot full', title: 'הגעת למכסת השעות השבועית' }, label, 'פנוי · הגעת למכסה');
     if (st === 'open') {
       return h('button', {
         class: 'slot free', type: 'button', onclick: () => openBook(date, l),
@@ -986,11 +1018,12 @@
         h('div', { class: 'stat' }, h('b', null, A.bookings.filter(b => b.date >= A.today).length), h('span', null, 'שיבוצים עתידיים')),
         h('div', { class: 'stat' }, h('b', null, A.bookings.filter(b => b.hasFeedback).length), h('span', null, 'משובים (60 יום)'))),
       A.teachers.length ? h('div', { class: 'table-wrap' }, h('table', null,
-        h('thead', null, h('tr', null, ['שם', 'טלפון', 'סטטוס', 'שיבוצים קרובים', 'סה״כ (60 יום)', ''].map(x => h('th', null, x)))),
+        h('thead', null, h('tr', null, ['שם', 'טלפון', 'סטטוס', 'מכסה שבועית', 'שיבוצים קרובים', 'סה״כ (60 יום)', ''].map(x => h('th', null, x)))),
         h('tbody', null, A.teachers.slice().sort((a, b) => a.name.localeCompare(b.name, 'he')).map(t => h('tr', { class: t.active ? '' : 'inactive' },
           h('td', null, h('strong', null, t.name)),
           h('td', { class: 'ltr' }, fmtPhone(t.phone)),
           h('td', null, t.active ? 'פעילה' : 'לא פעילה'),
+          h('td', null, t.weeklyLimit ? h('b', null, t.weeklyLimit + ' שעות') : h('span', { class: 'hint' }, A.settings.weeklyLimit ? 'כללית (' + A.settings.weeklyLimit + ')' : 'ללא הגבלה')),
           h('td', { class: 'num' }, upcoming[t.name] || 0),
           h('td', { class: 'num' }, total[t.name] || 0),
           h('td', null, h('div', { class: 'actions' },
@@ -1031,12 +1064,13 @@
     $('tName').value = t ? t.name : '';
     $('tPhone').value = t ? fmtPhone(t.phone) : '';
     $('tActive').checked = t ? t.active : true;
+    $('tLimit').value = t && t.weeklyLimit ? t.weeklyLimit : '';
     $('teacherDlg').showModal();
   }
   $('teacherForm').addEventListener('submit', (ev) => {
     if (ev.submitter && ev.submitter.value !== 'ok') return;
     ev.preventDefault();
-    const t = { id: editingTeacher ? editingTeacher.id : '', name: $('tName').value.trim(), phone: $('tPhone').value.trim(), active: $('tActive').checked };
+    const t = { id: editingTeacher ? editingTeacher.id : '', name: $('tName').value.trim(), phone: $('tPhone').value.trim(), active: $('tActive').checked, weeklyLimit: $('tLimit').value.trim() };
     adminUpdate(call('adminSaveTeacher', t), 'נשמר').then(() => $('teacherDlg').close(), () => {});
   });
   function deleteTeacher(t) {
@@ -1048,6 +1082,7 @@
     const st = A.settings;
     const start = h('input', { type: 'date', value: st.startDate || '' });
     const end = h('input', { type: 'date', value: st.endDate || '' });
+    const wl = h('input', { type: 'number', min: 0, max: 30, step: 1, inputmode: 'numeric', value: st.weeklyLimit || '', placeholder: 'ללא הגבלה', style: 'max-width:160px' });
     const times = Array.from({ length: A.lessonCount }, (_, i) => h('input', {
       value: (st.lessonTimes || [])[i] || '', placeholder: i === 0 ? 'למשל 08:00–08:45' : '', maxlength: 20, style: 'direction:ltr;text-align:right',
     }));
@@ -1073,12 +1108,15 @@
         h('h2', null, 'תקופת הפעילות'),
         h('p', { class: 'muted' }, 'המורות יכולות להשתבץ רק לימים בתוך התקופה (למשל: שנת הלימודים). אפשר להשאיר ריק – ואז אין הגבלה.'),
         h('div', { class: 'row' }, h('label', null, 'מתאריך', start), h('label', null, 'עד תאריך', end)),
+        h('h2', { style: 'margin-top:20px;font-size:18px' }, 'מגבלת שעות שבועית'),
+        h('p', { class: 'muted' }, 'כמה שיעורים כל מורה יכולה לשבץ בכל שבוע. ריק = ללא הגבלה. אפשר לקבוע מגבלה אחרת למורה מסוימת ברשימת המורות (עריכה). ההנהלה יכולה לשבץ גם מעבר למגבלה.'),
+        h('label', { style: 'max-width:220px' }, 'שעות בשבוע לכל מורה', wl),
         h('h2', { style: 'margin-top:20px;font-size:18px' }, 'שעות השיעורים'),
         h('p', { class: 'muted' }, 'יופיעו ליד כל שיעור בלוח. לא חובה.'),
         h('div', { class: 'times' }, times.map((inp, i) => h('label', null, 'שיעור ' + (i + 1), inp))),
         h('div', { style: 'margin-top:14px' }, h('button', {
           class: 'btn primary', type: 'button',
-          onclick: () => adminUpdate(call('adminSaveSettings', { startDate: start.value, endDate: end.value, lessonTimes: times.map(x => x.value.trim()) }), 'ההגדרות נשמרו').catch(() => {}),
+          onclick: () => adminUpdate(call('adminSaveSettings', { startDate: start.value, endDate: end.value, weeklyLimit: wl.value.trim(), lessonTimes: times.map(x => x.value.trim()) }), 'ההגדרות נשמרו').catch(() => {}),
         }, 'שמירה'))),
 
       h('div', { class: 'panel' },
