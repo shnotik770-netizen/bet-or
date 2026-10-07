@@ -863,7 +863,7 @@
 
     const limit = S.me && !S.adminCode ? S.me.weeklyLimit : 0;
     fill($('intro'),
-      h('span', null, isGuest() ? 'צפייה בלוח השיבוצים של המרחב (ללא אפשרות עריכה).' : 'בחרי שיעור פנוי כדי להשתבץ למרחב.'),
+      h('span', null, isGuest() ? 'צפייה בלוח השיבוצים של המרחב (ללא אפשרות עריכה).' : (S.adminCode ? 'בחרי שיעור פנוי כדי לשבץ אליו מורה.' : 'בחרי שיעור פנוי כדי להשתבץ למרחב.')),
       limit ? h('span', null, 'אפשר להשתבץ עד ', h('strong', null, (limit === 1 ? 'שעה אחת' : limit + ' שעות') + ' בשבוע'), '.') : null);
 
     const mine = d.bookings.filter(b => b.mine && b.date >= w.today)
@@ -978,8 +978,8 @@
     if (st === 'open') {
       return h('button', {
         class: 'slot free', type: 'button', onclick: () => openBook(date, l),
-        'aria-label': 'להשתבץ ל' + l.name + ' ב' + fmtLong(date),
-      }, label, h('span', { class: 'free-cta' }, '+ להשתבץ'));
+        'aria-label': (S.adminCode ? 'לשבץ ל' : 'להשתבץ ל') + l.name + ' ב' + fmtLong(date),
+      }, label, h('span', { class: 'free-cta' }, S.adminCode ? '+ לשבץ' : '+ להשתבץ'));
     }
     return h('div', { class: 'slot empty' }, label, st === 'past' ? '—' : '');
   }
@@ -988,7 +988,7 @@
   let pending = null;
   function openBook(date, l, wait) {
     pending = { date: date, lesson: l.id, wait: !!wait };
-    $('bookTitle').textContent = wait ? 'הצטרפות לרשימת המתנה' : 'השתבצות לשיעור';
+    $('bookTitle').textContent = wait ? 'הצטרפות לרשימת המתנה' : (S.adminCode ? 'שיבוץ מורה לשיעור' : 'השתבצות לשיעור');
     $('bookNote').hidden = !wait;
     $('bookNote').textContent = 'השיעור תפוס כרגע. אם הוא יתפנה – תשובצי אליו אוטומטית לפי סדר ההצטרפות, ותקבלי הודעה כאן באתר.';
     $('bookSubmit').textContent = wait ? 'הצטרפות להמתנה' : 'שיבוץ';
@@ -1021,7 +1021,7 @@
       try { classes = JSON.parse(store.get('beitor.classes') || '[]'); } catch (e) { /* ignore */ }
       store.set('beitor.classes', JSON.stringify([className].concat(classes.filter(c => c !== className)).slice(0, 8)));
       $('bookDlg').close();
-      toast(pending.wait ? 'נוספת לרשימת ההמתנה ⏳' : 'השתבצת בהצלחה! נתראה בבית אור ✨');
+      toast(pending.wait ? 'נוספת לרשימת ההמתנה ⏳' : (S.adminCode ? 'השיבוץ נקלט ✓' : 'השתבצת בהצלחה! נתראה בבית אור ✨'));
       return refresh();
     }).catch(e => {
       $('bookSubmit').disabled = false;
