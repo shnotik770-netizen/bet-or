@@ -1,0 +1,13 @@
+{
+  "name": "beit-or",
+  "version": "1.0.0",
+  "private": true,
+  "description": "בית אור – שיבוץ שיעורים למרחב הלמידה, בנות מנחם",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

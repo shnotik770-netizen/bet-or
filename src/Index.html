@@ -472,6 +472,10 @@
       if (hasGAS) {
         const r = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
         r[fn].apply(r, args);
+      } else if (window.BEITOR_SERVER) {
+        fetch('api/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ args: args }) })
+          .then(r => r.json().catch(() => ({ ok: false, error: 'שגיאת תקשורת' })))
+          .then(j => j.ok ? resolve(j.result) : reject(new Error(j.error || 'שגיאה')), () => reject(new Error('אין חיבור לשרת, נסי שוב')));
       } else {
         Promise.resolve().then(() => Mock[fn].apply(null, args)).then(resolve, reject);
       }
@@ -996,7 +1000,7 @@
   })();
 
   /* ---------- Start ---------- */
-  if (!hasGAS) $('previewBanner').hidden = false;
+  if (!hasGAS && !window.BEITOR_SERVER) $('previewBanner').hidden = false;
   refresh().then(() => { if (S.adminCode && S.data) loadAdmin(false); });
   setInterval(() => {
     if (document.visibilityState === 'visible' && S.view === 'schedule' && !document.querySelector('dialog[open]')) refresh();
