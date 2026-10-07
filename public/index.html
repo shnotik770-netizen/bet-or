@@ -233,6 +233,12 @@
   }
   .slot.full { border: 1.5px dashed var(--line); background: transparent; justify-content: center; align-items: center; color: var(--ink-3); font-size: 13px; }
   .slot.none { background: transparent; border: 0; }
+  .slot.blocked { background: var(--surface-2) var(--pattern); border: 1px solid var(--line); color: var(--ink-3); justify-content: center; align-items: center; font-size: 13px; text-align: center; }
+  .slot.blocked b { color: var(--ink-2); font-weight: 600; }
+  .lesson-picks { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lesson-picks label { flex-direction: row; align-items: center; gap: 6px; background: var(--surface-2); border-radius: 999px; padding: 6px 12px; color: var(--ink); cursor: pointer; }
+  .lesson-picks input { width: auto; accent-color: var(--teal); }
+  .lesson-picks label.off { opacity: .4; pointer-events: none; }
   .slot.empty { background: transparent; border-color: transparent; color: var(--ink-3); justify-content: center; align-items: center; }
   .is-locked .slot.empty, .is-closed .slot.empty { background: var(--surface-2) var(--pattern); border-color: var(--line); opacity: .7; }
   .is-past .slot.taken { opacity: .78; }
@@ -827,7 +833,7 @@
 
     fill($('tabs'), weeks.map((ws, i) => {
       const isThis = w.today >= ws && w.today < addDays(ws, 7);
-      const kicker = isThis ? 'השבוע' : (i === 0 ? 'השבוע הקרוב' : (i === 1 ? 'שבוע הבא' : 'בעוד שבועיים'));
+      const kicker = isThis ? 'השבוע' : (i === 0 ? 'השבוע הקרוב' : (i === 1 ? 'שבוע הבא' : (i === 2 ? 'בעוד שבועיים' : 'בעוד ' + i + ' שבועות')));
       const fri = addDays(ws, 5);
       return h('button', {
         class: 'tab', role: 'tab', type: 'button', 'aria-selected': String(i === S.weekIdx),
@@ -897,6 +903,13 @@
           canFeedback ? h('button', { class: 'link-btn fb', type: 'button', onclick: () => openFeedback(b) }, '✎ כתיבת משוב') : null,
           b.hasFeedback ? h('a', { class: 'link-btn fb', href: '#/feedback', onclick: () => { S.flashId = b.id; } }, '💬 משוב') : null,
           canCancel ? h('button', { class: 'link-btn', type: 'button', onclick: () => askCancel(b) }, 'ביטול שיבוץ') : null) : null);
+    }
+    const blocked = (S.data.config.blockedSlots || {})[date + '|' + l.id];
+    if (blocked && (st === 'open' || st === 'locked')) {
+      if (S.adminCode && st === 'open') {
+        return h('button', { class: 'slot blocked', type: 'button', title: 'חסום לשיבוץ – כהנהלה אפשר לשבץ בכל זאת', onclick: () => openBook(date, l) }, label, h('b', null, 'לא זמין'), h('span', null, blocked));
+      }
+      return h('div', { class: 'slot blocked' }, label, h('b', null, 'לא זמין'), h('span', null, blocked));
     }
     if (st === 'open' && isGuest()) return h('div', { class: 'slot empty' }, label, 'פנוי');
     if (st === 'open' && quotaFull(date)) return h('div', { class: 'slot full', title: 'הגעת למכסת השעות השבועית' }, label, 'פנוי · הגעת למכסה');
@@ -1178,6 +1191,7 @@
     const start = h('input', { type: 'date', value: st.startDate || '' });
     const end = h('input', { type: 'date', value: st.endDate || '' });
     const wl = h('input', { type: 'number', min: 0, max: 30, step: 1, inputmode: 'numeric', value: st.weeklyLimit || '', placeholder: 'ללא הגבלה', style: 'max-width:160px' });
+    const ahead = h('input', { type: 'number', min: 1, max: A.maxDaysAhead, step: 1, inputmode: 'numeric', value: st.daysAhead || A.defaultDaysAhead, style: 'max-width:160px' });
     const times = Array.from({ length: A.lessonCount }, (_, i) => h('input', {
       value: (st.lessonTimes || [])[i] || '', placeholder: i === 0 ? 'למשל 08:00–08:45' : '', maxlength: 20, style: 'direction:ltr;text-align:right',
     }));
@@ -1203,6 +1217,9 @@
         h('h2', null, 'תקופת הפעילות'),
         h('p', { class: 'muted' }, 'המורות יכולות להשתבץ רק לימים בתוך התקופה (למשל: שנת הלימודים). אפשר להשאיר ריק – ואז אין הגבלה.'),
         h('div', { class: 'row' }, h('label', null, 'מתאריך', start), h('label', null, 'עד תאריך', end)),
+        h('h2', { style: 'margin-top:20px;font-size:18px' }, 'כמה זמן מראש אפשר להשתבץ'),
+        h('p', { class: 'muted' }, 'מספר הימים קדימה שבהם המורות יכולות להשתבץ (ברירת המחדל: 10 ימים, שבוע וחצי). בכל יום נפתח יום נוסף.'),
+        h('label', { style: 'max-width:220px' }, 'ימים מראש', ahead),
         h('h2', { style: 'margin-top:20px;font-size:18px' }, 'מגבלת שעות שבועית'),
         h('p', { class: 'muted' }, 'כמה שיעורים כל מורה יכולה לשבץ בכל שבוע. ריק = ללא הגבלה. אפשר לקבוע מגבלה אחרת למורה מסוימת ברשימת המורות (עריכה). ההנהלה יכולה לשבץ גם מעבר למגבלה.'),
         h('label', { style: 'max-width:220px' }, 'שעות בשבוע לכל מורה', wl),
@@ -1211,8 +1228,10 @@
         h('div', { class: 'times' }, times.map((inp, i) => h('label', null, 'שיעור ' + (i + 1), inp))),
         h('div', { style: 'margin-top:14px' }, h('button', {
           class: 'btn primary', type: 'button',
-          onclick: () => adminUpdate(call('adminSaveSettings', { startDate: start.value, endDate: end.value, weeklyLimit: wl.value.trim(), lessonTimes: times.map(x => x.value.trim()) }), 'ההגדרות נשמרו').catch(() => {}),
+          onclick: () => adminUpdate(call('adminSaveSettings', { startDate: start.value, endDate: end.value, weeklyLimit: wl.value.trim(), daysAhead: ahead.value.trim(), lessonTimes: times.map(x => x.value.trim()) }), 'ההגדרות נשמרו').catch(() => {}),
         }, 'שמירה'))),
+
+      renderBlocksPanel(A),
 
       h('div', { class: 'panel' },
         h('h2', null, 'ימי חופש'),
@@ -1241,6 +1260,48 @@
             call('adminHolidaySuggestions').then(list => { S.suggestions = list; renderSugg(); }).catch(err => toast(errMsg(err), true));
           },
         }, h('summary', null, 'הצעות מהלוח העברי (חגים וימים מיוחדים בחודשים הקרובים)'), suggBox)));
+  }
+
+  function renderBlocksPanel(A) {
+    const st = A.settings;
+    const date = h('input', { type: 'date', required: true });
+    const reason = h('input', { placeholder: 'למשל: אירוע בית ספרי', maxlength: 40 });
+    const lessonTimes = st.lessonTimes || [];
+    const boxes = Array.from({ length: A.lessonCount }, (_, i) => h('input', { type: 'checkbox', value: i + 1 }));
+    const picks = h('div', { class: 'lesson-picks' }, boxes.map((b, i) => h('label', null, b, 'שיעור ' + (i + 1), lessonTimes[i] ? h('span', { class: 'hint' }, lessonTimes[i]) : null)));
+    date.addEventListener('change', () => {
+      const perDay = date.value ? A.lessonsByDay[dow(date.value)] : null;
+      const max = perDay != null ? perDay : A.lessonCount;
+      boxes.forEach((b, i) => { const off = i + 1 > max; b.parentNode.classList.toggle('off', off); if (off) b.checked = false; });
+    });
+    const lessonList = ls => ls.length > 1 && ls[ls.length - 1] - ls[0] === ls.length - 1 ? 'שיעורים ' + ls[0] + '–' + ls[ls.length - 1] : (ls.length > 1 ? 'שיעורים ' : 'שיעור ') + ls.join(', ');
+    const upcoming = st.blockedSlots.filter(b => b.date >= A.today);
+    return h('div', { class: 'panel' },
+      h('h2', null, 'חסימת שיעורים ביום מסוים'),
+      h('p', { class: 'muted' }, 'בוחרים יום ושיעורים שבהם המרחב לא זמין (למשל אירוע או מבחן). המשבצות יופיעו כ"לא זמין" ולא יהיה אפשר להשתבץ אליהן. כהנהלה אפשר לשבץ בהן בכל זאת.'),
+      h('form', {
+        style: 'display:flex;flex-direction:column;gap:10px',
+        onsubmit: (ev) => {
+          ev.preventDefault();
+          const lessons = boxes.filter(b => b.checked).map(b => Number(b.value));
+          if (!lessons.length) { toast('יש לבחור לפחות שיעור אחד', true); return; }
+          adminUpdate(call('adminAddBlock', { date: date.value, lessons: lessons, name: reason.value.trim() }), 'השיעורים נחסמו').catch(() => {});
+        },
+      },
+        h('div', { class: 'row' }, h('label', null, 'תאריך', date), h('label', null, 'סיבה (לא חובה)', reason)),
+        picks,
+        h('div', null, h('button', { class: 'btn primary', type: 'submit' }, '+ חסימה'))),
+      upcoming.length ? h('div', { class: 'table-wrap', style: 'margin-top:14px' }, h('table', null,
+        h('thead', null, h('tr', null, ['תאריך', 'שיעורים', 'סיבה', ''].map(x => h('th', null, x)))),
+        h('tbody', null, upcoming.map(b => h('tr', null,
+          h('td', null, dateEl(b.date)),
+          h('td', null, lessonList(b.lessons)),
+          h('td', null, b.name || h('span', { class: 'hint' }, '—')),
+          h('td', null, h('div', { class: 'actions' }, h('button', {
+            class: 'link danger', type: 'button',
+            onclick: () => adminUpdate(call('adminDeleteBlock', b.id), 'החסימה הוסרה').catch(() => {}),
+          }, 'הסרה'))))))))
+        : h('p', { class: 'empty-msg' }, 'אין שיעורים חסומים.'));
   }
 
   function renderBookingsAdmin(A) {

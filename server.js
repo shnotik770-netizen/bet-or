@@ -17,8 +17,9 @@ const CONFIG = {
   SCHOOL_NAME: 'בנות מנחם',
   SPACE_NAME: 'בית אור',
   TIMEZONE: 'Asia/Jerusalem',
-  // כמה ימים קדימה פתוח לשיבוץ (שבוע וחצי)
+  // כמה ימים קדימה פתוח לשיבוץ – ברירת מחדל (ההנהלה יכולה לשנות בהגדרות)
   DAYS_AHEAD: 10,
+  MAX_DAYS_AHEAD: 90,
   // 0=ראשון ... 5=שישי
   SCHOOL_DAYS: [0, 1, 2, 3, 4, 5],
   // מספר השיעורים בכל יום (שעות השיעורים נקבעות בצד הניהול)
@@ -42,7 +43,28 @@ db.teachers = db.teachers || [];
 db.bookings = db.bookings || [];
 db.sessions = db.sessions || {};
 // הגדרות שהמנהלת קובעת: תקופת הפעילות, ימי חופש ושעות השיעורים
-db.settings = Object.assign({ startDate: '', endDate: '', vacations: [], lessonTimes: [], weeklyLimit: 0 }, db.settings);
+db.settings = Object.assign({
+  startDate: '', endDate: '', vacations: [], lessonTimes: [], weeklyLimit: 0,
+  daysAhead: CONFIG.DAYS_AHEAD,
+  // שיעורים חסומים ביום מסוים: { id, date, lessons: [3, 4], name }
+  blockedSlots: [],
+}, db.settings);
+
+function daysAhead() { return db.settings.daysAhead > 0 ? db.settings.daysAhead : CONFIG.DAYS_AHEAD; }
+
+/** Reason a specific lesson on a date is blocked by the admin ('' if not). */
+function slotBlocked(date, lesson) {
+  const b = db.settings.blockedSlots.find(x => x.date === date && x.lessons.indexOf(lesson) >= 0);
+  return b ? b.name || 'לא זמין' : '';
+}
+
+function blockedBetween(start, end) {
+  const out = {};
+  db.settings.blockedSlots.forEach(b => {
+    if (b.date >= start && b.date <= end) b.lessons.forEach(l => { out[b.date + '|' + l] = b.name || 'לא זמין'; });
+  });
+  return out;
+}
 
 function save() {
   const tmp = DB_FILE + '.tmp';
@@ -62,7 +84,7 @@ function dow(s) { return parseDate(s).getUTCDay(); }
 /** The visible range: from the Sunday of the first school week through the Saturday after the last open day. */
 function windowNow() {
   const today = todayStr();
-  const last = addDays(today, CONFIG.DAYS_AHEAD);
+  const last = addDays(today, daysAhead());
   const start = dow(today) === 6 ? addDays(today, 1) : addDays(today, -dow(today));
   return { today, last, start, end: addDays(last, 6 - dow(last)) };
 }
@@ -212,6 +234,9 @@ function adminData() {
     teachers: db.teachers.map(t => ({ id: t.id, name: t.name, phone: t.phone, active: t.active, weeklyLimit: t.weeklyLimit || 0 })),
     settings: db.settings,
     lessonCount: CONFIG.LESSON_COUNT,
+    lessonsByDay: CONFIG.LESSONS_BY_DAY,
+    maxDaysAhead: CONFIG.MAX_DAYS_AHEAD,
+    defaultDaysAhead: CONFIG.DAYS_AHEAD,
     bookings: db.bookings.filter(b => b.date >= from).map(b => publicBooking(b, null))
       .sort((a, b) => (a.date + a.lesson).localeCompare(b.date + b.lesson)),
   };
@@ -256,8 +281,9 @@ const api = {
       guest: !ctx.teacher && !ctx.admin,
       window: w,
       config: {
-        schoolName: CONFIG.SCHOOL_NAME, spaceName: CONFIG.SPACE_NAME, daysAhead: CONFIG.DAYS_AHEAD,
+        schoolName: CONFIG.SCHOOL_NAME, spaceName: CONFIG.SPACE_NAME, daysAhead: daysAhead(),
         schoolDays: CONFIG.SCHOOL_DAYS, lessons: lessons(), lessonsByDay: CONFIG.LESSONS_BY_DAY, closedDates: closedDatesBetween(w.start, w.end),
+        blockedSlots: blockedBetween(w.start, w.end),
       },
       teachers: ctx.admin ? db.teachers.filter(t => t.active).map(t => ({ id: t.id, name: t.name })) : [],
       bookings: db.bookings.filter(b => b.date >= w.start && b.date <= w.end).map(b => publicBooking(b, ctx)),
@@ -282,6 +308,8 @@ const api = {
     // No await between the check and the write, so concurrent requests cannot double-book.
     const taken = db.bookings.find(b => b.date === date && b.lesson === lesson);
     if (taken) fail('השעה הזו כבר תפוסה – ' + taken.teacher + ' השתבצה אליה');
+    const blocked = slotBlocked(date, lesson);
+    if (blocked && !ctx.admin) fail('השיעור הזה לא זמין לשיבוץ (' + blocked + ')');
     const limit = weeklyLimitOf(t);
     if (limit && !ctx.admin && countInWeek(t.id, date) >= limit) {
       fail('הגעת למכסה של ' + (limit === 1 ? 'שעה אחת' : limit + ' שעות') + ' בשבוע הזה. אפשר לבטל שיבוץ אחר או לפנות להנהלה');
@@ -426,6 +454,11 @@ const api = {
     db.settings.startDate = startDate;
     db.settings.endDate = endDate;
     if (req.weeklyLimit !== undefined) db.settings.weeklyLimit = parseLimit(req.weeklyLimit);
+    if (req.daysAhead !== undefined && req.daysAhead !== '') {
+      const n = Number(req.daysAhead);
+      if (!Number.isInteger(n) || n < 1 || n > CONFIG.MAX_DAYS_AHEAD) fail('מספר הימים מראש צריך להיות בין 1 ל־' + CONFIG.MAX_DAYS_AHEAD);
+      db.settings.daysAhead = n;
+    }
     if (Array.isArray(req.lessonTimes)) {
       db.settings.lessonTimes = Array.from({ length: CONFIG.LESSON_COUNT }, (_, i) => clean(req.lessonTimes[i], 20));
     }
@@ -451,6 +484,36 @@ const api = {
   adminDeleteVacation(ctx, id) {
     requireAdmin(ctx);
     db.settings.vacations = db.settings.vacations.filter(v => v.id !== id);
+    save();
+    return adminData();
+  },
+
+  /** חסימת שיעורים מסוימים ביום מסוים (למשל: אירוע במרחב בשיעורים 3–4). */
+  adminAddBlock(ctx, req) {
+    requireAdmin(ctx);
+    req = req || {};
+    const date = String(req.date || '');
+    if (!DATE_RE.test(date)) fail('יש לבחור תאריך');
+    const max = lessonsOnDay(date);
+    const lessonsList = Array.from(new Set((Array.isArray(req.lessons) ? req.lessons : []).map(Number)))
+      .filter(n => Number.isInteger(n) && n >= 1 && n <= max).sort((a, b) => a - b);
+    if (!lessonsList.length) fail('יש לבחור לפחות שיעור אחד');
+    const name = clean(req.name, 40);
+    const existing = db.settings.blockedSlots.find(b => b.date === date);
+    if (existing) {
+      existing.lessons = Array.from(new Set(existing.lessons.concat(lessonsList))).sort((a, b) => a - b);
+      if (name) existing.name = name;
+    } else {
+      db.settings.blockedSlots.push({ id: crypto.randomUUID(), date, lessons: lessonsList, name });
+      db.settings.blockedSlots.sort((a, b) => a.date.localeCompare(b.date));
+    }
+    save();
+    return adminData();
+  },
+
+  adminDeleteBlock(ctx, id) {
+    requireAdmin(ctx);
+    db.settings.blockedSlots = db.settings.blockedSlots.filter(b => b.id !== id);
     save();
     return adminData();
   },
