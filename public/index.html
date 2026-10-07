@@ -4,33 +4,43 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>בית אור · שיבוץ שיעורים</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23a63f4b'/%3E%3Cpath d='M24 9c4 6 9 9.5 9 16.5a9 9 0 0 1-18 0c0-4 2-6.5 3.5-8 .3 3 1.8 4.6 3.4 5.2C21 18 22 13 24 9z' fill='%23ecd3a5'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%238a3f45'/%3E%3Cpath d='M24 9c4 6 9 9.5 9 16.5a9 9 0 0 1-18 0c0-4 2-6.5 3.5-8 .3 3 1.8 4.6 3.4 5.2C21 18 22 13 24 9z' fill='%23e2cba4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f8f2ea;
-    --surface: #fffdf9;
-    --surface-2: #f4ebdf;
-    --ink: #3b2829;
-    --ink-2: #6f5955;
-    --ink-3: #a39089;
-    --line: #ecdccf;
-    --blush: #f2b9aa;
-    --blush-soft: #fbe5de;
-    --berry: #a63f4b;
-    --berry-strong: #8c3340;
-    --terra: #cf7442;
-    --terra-soft: #fbe7d8;
-    --teal: #2e6b69;
-    --teal-strong: #245857;
-    --teal-soft: #dcebe6;
-    --sage-soft: #e7efe6;
-    --wood: #ecd3a5;
-    --wood-soft: #f9eedb;
-    --wood-line: #cfa86c;
-    --danger: #b0303d;
+    /* Sampled from the space: dusty-rose acoustic walls, wine band, terracotta beams,
+       plywood, and the cushions: petrol, powder blue, mist, slate, sage, olive, cream */
+    --bg: #f6f1eb;
+    --surface: #fffdfa;
+    --surface-2: #f1e9e1;
+    --ink: #3a2b2b;
+    --ink-2: #6c5a57;
+    --ink-3: #a09089;
+    --line: #e8dbd1;
+    --blush: #dfb3a3;
+    --blush-soft: #f4e3db;
+    --berry: #8a3f45;
+    --berry-strong: #73333a;
+    --terra: #c06a3e;
+    --terra-soft: #f6e2d4;
+    --teal: #2f5f62;
+    --teal-strong: #244b4e;
+    --teal-soft: #dbe6e5;
+    --sage-soft: #e6ebe2;
+    --wood: #dcc29b;
+    --wood-soft: #f4e9d8;
+    --wood-line: #c4a274;
+    --danger: #a3323a;
+    --c-petrol: #3d6e70;
+    --c-powder: #8fb0cf;
+    --c-mist: #a9c4c2;
+    --c-slate: #8a9aa1;
+    --c-sage: #94a98f;
+    --c-olive: #a9a173;
+    --c-cream: #cbbf9c;
+    --c-rose: #c9978a;
     --pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><g fill='none' stroke='rgba%28150%2C60%2C60%2C.10%29' stroke-width='1'><path d='M60 0V120M0 60H120M0 0.5H120M0.5 0V120'/></g><g fill='none' stroke='rgba%28150%2C60%2C60%2C.16%29' stroke-width='1.4' stroke-linecap='round'><path d='M0 46 A14 14 0 0 1 14 60'/><path d='M0 34 A26 26 0 0 1 26 60'/><path d='M0 22 A38 38 0 0 1 38 60'/><path d='M0 10 A50 50 0 0 1 50 60'/><path d='M66 6L114 54M114 6L66 54'/><rect x='10' y='80' width='40' height='20' rx='10'/><rect x='18' y='86' width='24' height='8' rx='4'/><circle cx='90' cy='90' r='20'/><circle cx='90' cy='90' r='9'/></g></svg>");
     --pattern-band: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><g fill='none' stroke='rgba%28255%2C255%2C255%2C.06%29' stroke-width='1'><path d='M60 0V120M0 60H120M0 0.5H120M0.5 0V120'/></g><g fill='none' stroke='rgba%28255%2C255%2C255%2C.10%29' stroke-width='1.4' stroke-linecap='round'><path d='M0 46 A14 14 0 0 1 14 60'/><path d='M0 34 A26 26 0 0 1 26 60'/><path d='M0 22 A38 38 0 0 1 38 60'/><path d='M0 10 A50 50 0 0 1 50 60'/><path d='M66 6L114 54M114 6L66 54'/><rect x='10' y='80' width='40' height='20' rx='10'/><rect x='18' y='86' width='24' height='8' rx='4'/><circle cx='90' cy='90' r='20'/><circle cx='90' cy='90' r='9'/></g></svg>");
     --shadow: 0 1px 2px rgba(80,40,30,.06), 0 6px 18px rgba(80,40,30,.07);
@@ -45,14 +55,14 @@
       --ink-2: #ccbab4;
       --ink-3: #8f7d78;
       --line: #3d3133;
-      --blush: #5a3533;
-      --blush-soft: #3a2729;
-      --berry: #e28a93;
-      --berry-strong: #f0a3aa;
+      --blush: #5a3a36;
+      --blush-soft: #3a2a2a;
+      --berry: #d99099;
+      --berry-strong: #e8a9b0;
       --terra: #ec9a68;
       --terra-soft: #3d2b22;
-      --teal: #7cc3bd;
-      --teal-strong: #9bd6d0;
+      --teal: #8cbcbc;
+      --teal-strong: #a8d2d1;
       --teal-soft: #213433;
       --sage-soft: #26302a;
       --wood: #d8bb88;
@@ -80,26 +90,27 @@
   .icons svg { width: 26px; height: 26px; }
 
   /* Header: blush acoustic-panel wall with a berry band, like the space */
-  .top { background: var(--blush) var(--pattern); color: #4a2326; position: relative; }
-  .top::after { content: ""; display: block; height: 14px; background: #a63f4b var(--pattern-band); background-size: 120px 120px; }
-  @media (prefers-color-scheme: dark) { .top { color: var(--ink); } .top::after { background-color: #6e2a33; } }
+  .top { background: #dfb3a3 var(--pattern); color: #4f2c2c; position: relative; }
+  @media (prefers-color-scheme: dark) { .top { background-color: var(--blush); } }
+  .top::after { content: ""; display: block; height: 14px; background: #8a3f45 var(--pattern-band); background-size: 120px 120px; }
+  @media (prefers-color-scheme: dark) { .top { color: var(--ink); } .top::after { background-color: #5e2c31; } }
   .top .wrap { display: flex; align-items: center; gap: 10px 14px; padding-top: 16px; padding-bottom: 16px; flex-wrap: wrap; }
   .brand { display: flex; align-items: center; gap: 12px; margin-inline-end: auto; }
   .logo { width: 50px; height: 50px; flex: none; }
-  .brand h1 { margin: 0; font-size: 27px; font-weight: 700; line-height: 1.1; color: #8c3340; }
+  .brand h1 { margin: 0; font-size: 27px; font-weight: 700; line-height: 1.1; color: #73333a; }
   @media (prefers-color-scheme: dark) { .brand h1 { color: var(--berry-strong); } }
   .brand p { margin: 2px 0 0; font-size: 14px; opacity: .85; }
   .nav { display: flex; gap: 6px; flex-wrap: wrap; }
   .nav a, .pill {
-    border: 0; background: rgba(255,253,249,.75); color: #6e2d34; text-decoration: none;
+    border: 0; background: rgba(255,253,249,.75); color: #73333a; text-decoration: none;
     border-radius: 999px; padding: 7px 15px; font-weight: 600; font-size: 14px; white-space: nowrap;
     box-shadow: 0 1px 0 rgba(140,51,64,.15);
   }
   .nav a:hover, .pill:hover { background: #fffdf9; }
-  .nav a[aria-current="page"] { background: #a63f4b; color: #fff; }
+  .nav a[aria-current="page"] { background: #8a3f45; color: #fff; }
   @media (prefers-color-scheme: dark) {
     .nav a, .pill { background: rgba(38,30,32,.7); color: var(--ink); }
-    .nav a[aria-current="page"] { background: #a63f4b; color: #fff; }
+    .nav a[aria-current="page"] { background: #8a3f45; color: #fff; }
   }
   .me { display: flex; align-items: center; gap: 8px; font-size: 14px; }
   .me .pill { padding: 5px 12px; font-size: 13px; }
@@ -113,11 +124,11 @@
   .login {
     min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
     background:
-      linear-gradient(to bottom, transparent 64%, #a63f4b 64%, #a63f4b 86%, var(--blush) 86%),
+      linear-gradient(to bottom, transparent 64%, #8a3f45 64%, #8a3f45 86%, var(--blush) 86%),
       var(--pattern), var(--blush);
   }
   @media (prefers-color-scheme: dark) {
-    .login { background: linear-gradient(to bottom, transparent 64%, #6e2a33 64%, #6e2a33 86%, transparent 86%), var(--pattern), var(--bg); }
+    .login { background: linear-gradient(to bottom, transparent 64%, #5e2c31 64%, #5e2c31 86%, transparent 86%), var(--pattern), var(--bg); }
   }
   .login-card {
     width: min(410px, 100%); background: var(--surface); border-radius: 30px; padding: 30px 26px 24px;
@@ -177,6 +188,12 @@
     background: var(--surface); border: 1px solid var(--line); border-bottom: 5px solid var(--wood);
     border-radius: 16px; padding: 10px 12px; box-shadow: var(--shadow);
   }
+  .day:nth-child(2) .day-head { border-bottom-color: var(--c-petrol); }
+  .day:nth-child(3) .day-head { border-bottom-color: var(--c-powder); }
+  .day:nth-child(4) .day-head { border-bottom-color: var(--c-sage); }
+  .day:nth-child(5) .day-head { border-bottom-color: var(--c-cream); }
+  .day:nth-child(6) .day-head { border-bottom-color: var(--c-slate); }
+  .day:nth-child(7) .day-head { border-bottom-color: var(--c-olive); }
   .day-name { font-weight: 700; display: flex; align-items: center; gap: 6px; }
   .day-date { font-size: 13px; color: var(--ink-2); display: flex; gap: 8px; flex-wrap: wrap; }
   .heb { color: var(--berry); font-weight: 600; }
@@ -195,18 +212,20 @@
   }
   .slot-label { display: none; font-size: 12px; color: var(--ink-3); font-weight: 500; }
   .slot.free {
-    border: 1.5px dashed #dcc6b8; background: transparent; justify-content: center; align-items: center;
+    border: 1.5px dashed #d9c6ba; background: transparent; justify-content: center; align-items: center;
     color: var(--ink-3); transition: background .15s, border-color .15s, color .15s;
   }
   @media (prefers-color-scheme: dark) { .slot.free { border-color: var(--line); } }
   .slot.free:hover, .slot.free:focus-visible { border-color: var(--berry); border-style: solid; color: var(--berry-strong); background: var(--blush-soft); outline: none; }
   .free-cta { font-weight: 700; font-size: 14px; }
-  .slot.taken { background: var(--sage-soft); border-color: transparent; }
+  .slot.taken { --c: var(--c-sage); background: color-mix(in srgb, var(--c) 34%, var(--surface)); border-color: transparent; border-inline-start: 6px solid var(--c); }
+  @media (prefers-color-scheme: dark) { .slot.taken { background: color-mix(in srgb, var(--c) 22%, var(--surface)); } }
   .slot.taken .who { display: flex; flex-direction: column; min-width: 0; }
-  .slot.taken strong { font-weight: 700; color: var(--teal-strong); overflow-wrap: anywhere; }
+  .slot.taken strong { font-weight: 700; color: color-mix(in srgb, var(--c) 45%, #1b1716); overflow-wrap: anywhere; }
+  @media (prefers-color-scheme: dark) { .slot.taken strong { color: color-mix(in srgb, var(--c) 55%, #fff); } }
   .slot .cls { font-size: 13px; color: var(--ink-2); }
   .slot .topic { font-size: 12px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .slot.mine { background: var(--wood-soft); border: 1.5px solid var(--wood-line); }
+  .slot.taken.mine, .slot.mine { background: var(--wood-soft); border: 1.5px solid var(--wood-line); }
   .slot.mine strong { color: var(--ink); }
   .slot.mine::before {
     content: "שלי"; position: absolute; top: 7px; inset-inline-end: 9px; font-size: 10px; font-weight: 700;
@@ -262,7 +281,7 @@
   .link.danger { color: var(--danger); }
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
   .stat { background: var(--blush-soft); border-radius: 16px; padding: 12px 14px; }
-  .stat:nth-child(2) { background: var(--sage-soft); }
+  .stat:nth-child(2) { background: color-mix(in srgb, var(--c-mist) 30%, var(--surface)); }
   .stat:nth-child(3) { background: var(--wood-soft); }
   .stat b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: "Rubik", sans-serif; }
   .stat span { font-size: 13px; color: var(--ink-2); }
@@ -278,18 +297,16 @@
   .fb-pend-card .btn { align-self: flex-start; padding: 7px 14px; font-size: 14px; }
   .fb-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
   .fb-card {
-    background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--blush); border-radius: 20px;
+    background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--c, var(--blush)); border-radius: 20px;
     box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; scroll-margin-top: 16px;
   }
-  .fb-card:nth-child(3n+2) { border-top-color: #b9cdbf; }
-  .fb-card:nth-child(3n) { border-top-color: var(--wood); }
   .fb-card.flash { animation: flash 1.6s ease-out; }
   @keyframes flash { from { box-shadow: 0 0 0 4px var(--terra); } to { box-shadow: var(--shadow); } }
   .fb-week { font-size: 14px; font-weight: 700; color: var(--berry); }
   .fb-who { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .fb-who strong { font-size: 17px; }
   .fb-meta { font-size: 13px; color: var(--ink-2); }
-  .fb-topic { font-size: 14px; background: var(--teal-soft); color: var(--teal-strong); border-radius: 999px; padding: 3px 12px; align-self: flex-start; }
+  .fb-topic { font-size: 14px; background: color-mix(in srgb, var(--c, var(--c-mist)) 25%, var(--surface)); color: var(--ink); border-radius: 999px; padding: 3px 12px; align-self: flex-start; }
   .fb-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
   .stars { color: var(--terra); letter-spacing: 2px; font-size: 16px; }
   .stars .off { color: var(--line); }
@@ -349,23 +366,23 @@
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="logo" viewBox="0 0 48 48">
-    <circle cx="24" cy="24" r="23" fill="#a63f4b"/>
+    <circle cx="24" cy="24" r="23" fill="#8a3f45"/>
     <circle cx="24" cy="24" r="23" fill="none" stroke="#fff" stroke-opacity=".25" stroke-dasharray="2 4"/>
-    <path d="M24 9c4 6 9 9.5 9 16.5a9 9 0 0 1-18 0c0-4 2-6.5 3.5-8 .3 3 1.8 4.6 3.4 5.2C21 18 22 13 24 9z" fill="#ecd3a5" stroke="#cfa86c" stroke-width="1.2"/>
-    <path d="M24 22c2 3 4 4.5 4 7.6a4 4 0 0 1-8 0c0-2.4 1.6-4.4 4-7.6z" fill="#f2b9aa"/>
-    <rect x="15" y="36" width="18" height="3" rx="1.5" fill="#ecd3a5"/>
+    <path d="M24 9c4 6 9 9.5 9 16.5a9 9 0 0 1-18 0c0-4 2-6.5 3.5-8 .3 3 1.8 4.6 3.4 5.2C21 18 22 13 24 9z" fill="#e2cba4" stroke="#c4a274" stroke-width="1.2"/>
+    <path d="M24 22c2 3 4 4.5 4 7.6a4 4 0 0 1-8 0c0-2.4 1.6-4.4 4-7.6z" fill="#dfb3a3"/>
+    <rect x="15" y="36" width="18" height="3" rx="1.5" fill="#e2cba4"/>
   </symbol>
   <symbol id="i-thumb" viewBox="0 0 48 48">
-    <g fill="#ecd3a5" stroke="#cfa86c" stroke-width="1.5" stroke-linejoin="round">
+    <g fill="#e2cba4" stroke="#c4a274" stroke-width="1.5" stroke-linejoin="round">
       <rect x="4" y="21" width="8" height="21" rx="3"/>
       <path d="M15 21l7-13c2-4 8-3 7.5 2L28 18h11c3 0 5.3 2.8 4.5 5.7l-3.6 13.6c-.7 2.6-2.8 4.7-5.6 4.7H15z"/>
     </g>
   </symbol>
   <symbol id="i-heart" viewBox="0 0 48 48">
-    <path d="M24 42C11 33 4 25 4 16.5 4 10.700 8.5 6 14 6c4.300 0 7.600 2.400 10 6 2.400-3.600 5.700-6 10-6 5.500 0 10 4.700 10 10.500C44 25 37 33 24 42z" fill="#ecd3a5" stroke="#cfa86c" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M24 42C11 33 4 25 4 16.5 4 10.700 8.5 6 14 6c4.300 0 7.600 2.400 10 6 2.400-3.600 5.700-6 10-6 5.500 0 10 4.700 10 10.500C44 25 37 33 24 42z" fill="#e2cba4" stroke="#c4a274" stroke-width="1.5" stroke-linejoin="round"/>
   </symbol>
   <symbol id="i-book" viewBox="0 0 48 48">
-    <g fill="#ecd3a5" stroke="#cfa86c" stroke-width="1.5" stroke-linejoin="round">
+    <g fill="#e2cba4" stroke="#c4a274" stroke-width="1.5" stroke-linejoin="round">
       <path d="M4 10l18 5v26L4 36z"/><path d="M44 10l-18 5v26l18-5z"/>
       <path d="M9 16l9 2.5v17L9 33z" fill="none"/><path d="M39 16l-9 2.5v17l9-2.5z" fill="none"/>
     </g>
@@ -556,6 +573,14 @@
       const month = (parts.find(p => p.type === 'month') || {}).value;
       return day && month ? gematria(day) + ' ' + month : '';
     } catch (e) { return ''; }
+  }
+
+  const CUSHIONS = ['petrol', 'powder', 'sage', 'cream', 'slate', 'olive', 'mist', 'rose'];
+  /** Each teacher gets a stable cushion color, like the stack of cubes in the space. */
+  function teacherColor(name) {
+    let x = 0;
+    for (let i = 0; i < name.length; i++) x = (x * 31 + name.charCodeAt(i)) >>> 0;
+    return '--c: var(--c-' + CUSHIONS[x % CUSHIONS.length] + ')';
   }
 
   /** Hebrew date first, Gregorian smaller: "יום שלישי כ״ה תשרי 6.10". */
@@ -864,7 +889,7 @@
       const manage = b.mine || !!S.adminCode;
       const canCancel = manage && date >= today;
       const canFeedback = manage && date <= today && !b.hasFeedback;
-      return h('div', { class: 'slot taken' + (b.mine ? ' mine' : '') },
+      return h('div', { class: 'slot taken' + (b.mine ? ' mine' : ''), style: teacherColor(b.teacher) },
         label,
         h('div', { class: 'who' }, h('strong', null, b.teacher), h('span', { class: 'cls' }, b.className)),
         b.topic ? h('div', { class: 'topic', title: b.topic }, b.topic) : null,
@@ -1023,7 +1048,7 @@
       feed.length ? h('div', { class: 'fb-feed' }, feed.map(b => {
         const fb = b.feedback;
         const edited = fb.updatedAt && fb.createdAt && fb.updatedAt.slice(0, 16) !== fb.createdAt.slice(0, 16);
-        return h('article', { class: 'fb-card' + (S.flashId === b.id ? ' flash' : ''), id: 'fb-' + b.id },
+        return h('article', { class: 'fb-card' + (S.flashId === b.id ? ' flash' : ''), id: 'fb-' + b.id, style: teacherColor(b.teacher) },
           h('div', { class: 'fb-week' }, weekTitleFrom(F.calendar, addDays(b.date, -dow(b.date)))),
           h('div', { class: 'fb-who' }, h('strong', null, b.teacher), h('span', { class: 'fb-meta' }, b.className)),
           h('div', { class: 'fb-meta' }, dateEl(b.date), ' · ' + lessonById(F.lessons, b.lesson).name),
