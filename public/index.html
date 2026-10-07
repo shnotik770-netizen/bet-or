@@ -857,16 +857,13 @@
   function lessonName(id) { return lessonById(S.data.config.lessons, id).name; }
 
   function renderSchedule() {
-    const d = S.data, w = d.window, cfg = d.config;
-    let lastDay = w.last;
-    while (cfg.schoolDays.indexOf(dow(lastDay)) < 0) lastDay = addDays(lastDay, -1);
+    const d = S.data, w = d.window;
     const weeks = weeksOf(w);
     if (S.weekIdx == null || S.weekIdx >= weeks.length) S.weekIdx = 0;
 
     const limit = S.me && !S.adminCode ? S.me.weeklyLimit : 0;
     fill($('intro'),
       h('span', null, isGuest() ? 'צפייה בלוח השיבוצים של המרחב (ללא אפשרות עריכה).' : 'בחרי שיעור פנוי כדי להשתבץ למרחב.'),
-      h('span', null, 'ההרשמה פתוחה עד ', h('strong', null, dateEl(lastDay)), ' · בכל יום נפתח יום נוסף.'),
       limit ? h('span', null, 'אפשר להשתבץ עד ', h('strong', null, (limit === 1 ? 'שעה אחת' : limit + ' שעות') + ' בשבוע'), '.') : null);
 
     const mine = d.bookings.filter(b => b.mine && b.date >= w.today)
