@@ -1191,6 +1191,9 @@
     const start = h('input', { type: 'date', value: st.startDate || '' });
     const end = h('input', { type: 'date', value: st.endDate || '' });
     const wl = h('input', { type: 'number', min: 0, max: 30, step: 1, inputmode: 'numeric', value: st.weeklyLimit || '', placeholder: 'ללא הגבלה', style: 'max-width:160px' });
+    const perDay = [0, 1, 2, 3, 4, 5].map(d => h('input', {
+      type: 'number', min: 0, max: A.maxLessons, step: 1, inputmode: 'numeric', value: A.lessonsByDay[d], 'data-day': d,
+    }));
     const ahead = h('input', { type: 'number', min: 1, max: A.maxDaysAhead, step: 1, inputmode: 'numeric', value: st.daysAhead || A.defaultDaysAhead, style: 'max-width:160px' });
     const times = Array.from({ length: A.lessonCount }, (_, i) => h('input', {
       value: (st.lessonTimes || [])[i] || '', placeholder: i === 0 ? 'למשל 08:00–08:45' : '', maxlength: 20, style: 'direction:ltr;text-align:right',
@@ -1217,6 +1220,9 @@
         h('h2', null, 'תקופת הפעילות'),
         h('p', { class: 'muted' }, 'המורות יכולות להשתבץ רק לימים בתוך התקופה (למשל: שנת הלימודים). אפשר להשאיר ריק – ואז אין הגבלה.'),
         h('div', { class: 'row' }, h('label', null, 'מתאריך', start), h('label', null, 'עד תאריך', end)),
+        h('h2', { style: 'margin-top:20px;font-size:18px' }, 'מספר השיעורים בכל יום'),
+        h('p', { class: 'muted' }, 'השינוי חל רק על שיבוצים חדשים. שיבוצים שכבר נעשו נשארים במקומם ומופיעים בלוח. 0 = אין שיעורים ביום הזה.'),
+        h('div', { class: 'times' }, perDay.map((inp, d) => h('label', null, 'יום ' + DAY_NAMES[d], inp))),
         h('h2', { style: 'margin-top:20px;font-size:18px' }, 'כמה זמן מראש אפשר להשתבץ'),
         h('p', { class: 'muted' }, 'מספר הימים קדימה שבהם המורות יכולות להשתבץ (ברירת המחדל: 10 ימים, שבוע וחצי). בכל יום נפתח יום נוסף.'),
         h('label', { style: 'max-width:220px' }, 'ימים מראש', ahead),
@@ -1228,7 +1234,9 @@
         h('div', { class: 'times' }, times.map((inp, i) => h('label', null, 'שיעור ' + (i + 1), inp))),
         h('div', { style: 'margin-top:14px' }, h('button', {
           class: 'btn primary', type: 'button',
-          onclick: () => adminUpdate(call('adminSaveSettings', { startDate: start.value, endDate: end.value, weeklyLimit: wl.value.trim(), daysAhead: ahead.value.trim(), lessonTimes: times.map(x => x.value.trim()) }), 'ההגדרות נשמרו').catch(() => {}),
+          onclick: () => adminUpdate(call('adminSaveSettings', { startDate: start.value, endDate: end.value, weeklyLimit: wl.value.trim(), daysAhead: ahead.value.trim(),
+            lessonsPerDay: perDay.reduce((o, inp, d) => { o[d] = inp.value.trim() === '' ? 0 : Number(inp.value); return o; }, {}),
+            lessonTimes: Array.from({ length: A.maxLessons }, (_, i) => (times[i] ? times[i].value.trim() : (st.lessonTimes || [])[i] || '')) }), 'ההגדרות נשמרו').catch(() => {}),
         }, 'שמירה'))),
 
       renderBlocksPanel(A),

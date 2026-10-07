@@ -22,10 +22,9 @@ const CONFIG = {
   MAX_DAYS_AHEAD: 90,
   // 0=ראשון ... 5=שישי
   SCHOOL_DAYS: [0, 1, 2, 3, 4, 5],
-  // מספר השיעורים בכל יום (שעות השיעורים נקבעות בצד הניהול)
-  LESSON_COUNT: 6,
-  // ימים עם פחות שיעורים (5=שישי)
-  LESSONS_BY_DAY: { 5: 3 },
+  // מספר השיעורים בכל יום – ברירת מחדל (ההנהלה יכולה לשנות בהגדרות). 5=שישי
+  DEFAULT_LESSONS_PER_DAY: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 3 },
+  MAX_LESSONS: 10,
   // כמה ימים אחורה שיעור שעבר מופיע כ"ממתין למשוב"
   FEEDBACK_DAYS: 60,
 };
@@ -46,6 +45,7 @@ db.sessions = db.sessions || {};
 db.settings = Object.assign({
   startDate: '', endDate: '', vacations: [], lessonTimes: [], weeklyLimit: 0,
   daysAhead: CONFIG.DAYS_AHEAD,
+  lessonsPerDay: Object.assign({}, CONFIG.DEFAULT_LESSONS_PER_DAY),
   // שיעורים חסומים ביום מסוים: { id, date, lessons: [3, 4], name }
   blockedSlots: [],
 }, db.settings);
@@ -91,14 +91,21 @@ function windowNow() {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-function lessonsOnDay(date) {
-  const n = CONFIG.LESSONS_BY_DAY[dow(date)];
-  return n == null ? CONFIG.LESSON_COUNT : n;
+/** Lessons per weekday as set by the admin. Affects new bookings only; existing ones stay. */
+function lessonsPerDay() {
+  const out = {};
+  CONFIG.SCHOOL_DAYS.forEach(d => {
+    const n = db.settings.lessonsPerDay && db.settings.lessonsPerDay[d];
+    out[d] = Number.isInteger(n) ? n : CONFIG.DEFAULT_LESSONS_PER_DAY[d];
+  });
+  return out;
 }
+function lessonsOnDay(date) { return lessonsPerDay()[dow(date)] || 0; }
+function maxLessons() { return Math.max.apply(null, Object.values(lessonsPerDay()).concat([1])); }
 
-function lessons() {
+function lessons(count) {
   const times = db.settings.lessonTimes || [];
-  return Array.from({ length: CONFIG.LESSON_COUNT }, (_, i) => ({ id: i + 1, name: 'שיעור ' + (i + 1), time: times[i] || '' }));
+  return Array.from({ length: count || maxLessons() }, (_, i) => ({ id: i + 1, name: 'שיעור ' + (i + 1), time: times[i] || '' }));
 }
 
 /** Why a day is closed ('' if open): vacation name, or outside the active period. */
@@ -233,8 +240,9 @@ function adminData() {
     today: w.today,
     teachers: db.teachers.map(t => ({ id: t.id, name: t.name, phone: t.phone, active: t.active, weeklyLimit: t.weeklyLimit || 0 })),
     settings: db.settings,
-    lessonCount: CONFIG.LESSON_COUNT,
-    lessonsByDay: CONFIG.LESSONS_BY_DAY,
+    lessonCount: maxLessons(),
+    lessonsByDay: lessonsPerDay(),
+    maxLessons: CONFIG.MAX_LESSONS,
     maxDaysAhead: CONFIG.MAX_DAYS_AHEAD,
     defaultDaysAhead: CONFIG.DAYS_AHEAD,
     bookings: db.bookings.filter(b => b.date >= from).map(b => publicBooking(b, null))
@@ -275,6 +283,8 @@ const api = {
   async getState(ctx) {
     requireView(ctx);
     const w = windowNow();
+    // Bookings made before a change to the number of lessons stay visible, so the grid covers them too.
+    const weekBookings = db.bookings.filter(b => b.date >= w.start && b.date <= w.end);
     return {
       me: ctx.teacher ? { id: ctx.teacher.id, name: ctx.teacher.name, weeklyLimit: weeklyLimitOf(ctx.teacher) } : null,
       admin: ctx.admin,
@@ -282,11 +292,12 @@ const api = {
       window: w,
       config: {
         schoolName: CONFIG.SCHOOL_NAME, spaceName: CONFIG.SPACE_NAME, daysAhead: daysAhead(),
-        schoolDays: CONFIG.SCHOOL_DAYS, lessons: lessons(), lessonsByDay: CONFIG.LESSONS_BY_DAY, closedDates: closedDatesBetween(w.start, w.end),
+        schoolDays: CONFIG.SCHOOL_DAYS, lessons: lessons(Math.max.apply(null, [maxLessons()].concat(weekBookings.map(b => b.lesson)))),
+        lessonsByDay: lessonsPerDay(), closedDates: closedDatesBetween(w.start, w.end),
         blockedSlots: blockedBetween(w.start, w.end),
       },
       teachers: ctx.admin ? db.teachers.filter(t => t.active).map(t => ({ id: t.id, name: t.name })) : [],
-      bookings: db.bookings.filter(b => b.date >= w.start && b.date <= w.end).map(b => publicBooking(b, ctx)),
+      bookings: weekBookings.map(b => publicBooking(b, ctx)),
       calendar: await getCalendar(w.start, w.end),
     };
   },
@@ -302,7 +313,7 @@ const api = {
     const className = clean(req.className, 30);
     const topic = clean(req.topic, 120);
     if (!className) fail('יש למלא כיתה');
-    if (!(lesson >= 1 && lesson <= CONFIG.LESSON_COUNT)) fail('שיעור לא תקין');
+    if (!(lesson >= 1 && lesson <= CONFIG.MAX_LESSONS)) fail('שיעור לא תקין');
     if (date && DATE_RE.test(date) && lesson > lessonsOnDay(date)) fail('ביום הזה יש רק ' + lessonsOnDay(date) + ' שיעורים');
     if (!isBookable(date, windowNow())) fail('לא ניתן להשתבץ בתאריך זה');
     // No await between the check and the write, so concurrent requests cannot double-book.
@@ -351,7 +362,7 @@ const api = {
     const byDateDesc = (a, b) => (b.date + b.lesson).localeCompare(a.date + a.lesson);
     return {
       today: w.today,
-      lessons: lessons(),
+      lessons: lessons(CONFIG.MAX_LESSONS),
       feed: feed.map(out).sort(byDateDesc),
       pending: pending.map(out).sort(byDateDesc),
       calendar,
@@ -454,13 +465,22 @@ const api = {
     db.settings.startDate = startDate;
     db.settings.endDate = endDate;
     if (req.weeklyLimit !== undefined) db.settings.weeklyLimit = parseLimit(req.weeklyLimit);
+    if (req.lessonsPerDay && typeof req.lessonsPerDay === 'object') {
+      const next = {};
+      CONFIG.SCHOOL_DAYS.forEach(d => {
+        const n = Number(req.lessonsPerDay[d]);
+        if (!Number.isInteger(n) || n < 0 || n > CONFIG.MAX_LESSONS) fail('מספר השיעורים ביום צריך להיות בין 0 ל־' + CONFIG.MAX_LESSONS);
+        next[d] = n;
+      });
+      db.settings.lessonsPerDay = next;
+    }
     if (req.daysAhead !== undefined && req.daysAhead !== '') {
       const n = Number(req.daysAhead);
       if (!Number.isInteger(n) || n < 1 || n > CONFIG.MAX_DAYS_AHEAD) fail('מספר הימים מראש צריך להיות בין 1 ל־' + CONFIG.MAX_DAYS_AHEAD);
       db.settings.daysAhead = n;
     }
     if (Array.isArray(req.lessonTimes)) {
-      db.settings.lessonTimes = Array.from({ length: CONFIG.LESSON_COUNT }, (_, i) => clean(req.lessonTimes[i], 20));
+      db.settings.lessonTimes = Array.from({ length: CONFIG.MAX_LESSONS }, (_, i) => clean(req.lessonTimes[i], 20));
     }
     save();
     return adminData();
