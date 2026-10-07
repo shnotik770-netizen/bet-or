@@ -23,6 +23,8 @@ const CONFIG = {
   SCHOOL_DAYS: [0, 1, 2, 3, 4, 5],
   // מספר השיעורים בכל יום (שעות השיעורים נקבעות בצד הניהול)
   LESSON_COUNT: 6,
+  // ימים עם פחות שיעורים (5=שישי)
+  LESSONS_BY_DAY: { 5: 3 },
   // כמה ימים אחורה שיעור שעבר מופיע כ"ממתין למשוב"
   FEEDBACK_DAYS: 60,
 };
@@ -66,6 +68,11 @@ function windowNow() {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function lessonsOnDay(date) {
+  const n = CONFIG.LESSONS_BY_DAY[dow(date)];
+  return n == null ? CONFIG.LESSON_COUNT : n;
+}
 
 function lessons() {
   const times = db.settings.lessonTimes || [];
@@ -250,7 +257,7 @@ const api = {
       window: w,
       config: {
         schoolName: CONFIG.SCHOOL_NAME, spaceName: CONFIG.SPACE_NAME, daysAhead: CONFIG.DAYS_AHEAD,
-        schoolDays: CONFIG.SCHOOL_DAYS, lessons: lessons(), closedDates: closedDatesBetween(w.start, w.end),
+        schoolDays: CONFIG.SCHOOL_DAYS, lessons: lessons(), lessonsByDay: CONFIG.LESSONS_BY_DAY, closedDates: closedDatesBetween(w.start, w.end),
       },
       teachers: ctx.admin ? db.teachers.filter(t => t.active).map(t => ({ id: t.id, name: t.name })) : [],
       bookings: db.bookings.filter(b => b.date >= w.start && b.date <= w.end).map(b => publicBooking(b, ctx)),
@@ -270,6 +277,7 @@ const api = {
     const topic = clean(req.topic, 120);
     if (!className) fail('יש למלא כיתה');
     if (!(lesson >= 1 && lesson <= CONFIG.LESSON_COUNT)) fail('שיעור לא תקין');
+    if (date && DATE_RE.test(date) && lesson > lessonsOnDay(date)) fail('ביום הזה יש רק ' + lessonsOnDay(date) + ' שיעורים');
     if (!isBookable(date, windowNow())) fail('לא ניתן להשתבץ בתאריך זה');
     // No await between the check and the write, so concurrent requests cannot double-book.
     const taken = db.bookings.find(b => b.date === date && b.lesson === lesson);

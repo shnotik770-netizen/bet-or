@@ -180,6 +180,7 @@
   .slot.full { border: 1.5px dashed var(--line); background: transparent; justify-content: center; align-items: center; color: var(--ink-3); font-size: 13px; }
   .tab .t-quota { font-size: 12px; margin-top: 4px; color: var(--gold-strong); font-weight: 600; }
   .tab .t-quota.full { color: var(--danger); }
+  .slot.none { background: transparent; border: 0; }
   .slot.empty { background: transparent; border-color: transparent; color: var(--ink-3); justify-content: center; align-items: center; }
   .is-locked .slot.empty, .is-closed .slot.empty { background: repeating-linear-gradient(-45deg, transparent 0 8px, var(--surface-2) 8px 10px); border-color: var(--line); }
   .is-past .slot.taken { opacity: .75; }
@@ -201,6 +202,7 @@
     .slot.empty { justify-content: flex-start; min-height: 40px; }
     .slot-actions { margin-inline-start: auto; }
     .day.is-past { display: none; }
+    .slot.none { display: none; }
     .tab { flex-basis: 170px; }
   }
 
@@ -781,7 +783,10 @@
           st === 'locked' ? h('div', { class: 'day-note' }, 'ייפתח להרשמה ב־' + fmtShort(addDays(date, -cfg.daysAhead))) : null,
           st === 'past' ? h('div', { class: 'day-note' }, 'עבר') : null,
           st === 'closed' ? h('div', { class: 'day-note' }, 'המרחב סגור') : null),
-        cfg.lessons.map(l => renderSlot(date, l, st))));
+        cfg.lessons.map(l => {
+          const max = (cfg.lessonsByDay || {})[dw];
+          return max != null && l.id > max && !S.index[date + '|' + l.id] ? h('div', { class: 'slot none', 'aria-hidden': 'true' }) : renderSlot(date, l, st);
+        })));
     });
     return grid;
   }
