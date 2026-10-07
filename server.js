@@ -457,13 +457,16 @@ const api = {
   adminSaveSettings(ctx, req) {
     requireAdmin(ctx);
     req = req || {};
-    const startDate = String(req.startDate || '');
-    const endDate = String(req.endDate || '');
-    if (startDate && !DATE_RE.test(startDate)) fail('תאריך התחלה לא תקין');
-    if (endDate && !DATE_RE.test(endDate)) fail('תאריך סיום לא תקין');
-    if (startDate && endDate && endDate < startDate) fail('תאריך הסיום לפני תאריך ההתחלה');
-    db.settings.startDate = startDate;
-    db.settings.endDate = endDate;
+    // Each admin section saves only its own fields.
+    if ('startDate' in req || 'endDate' in req) {
+      const startDate = String(req.startDate || '');
+      const endDate = String(req.endDate || '');
+      if (startDate && !DATE_RE.test(startDate)) fail('תאריך התחלה לא תקין');
+      if (endDate && !DATE_RE.test(endDate)) fail('תאריך סיום לא תקין');
+      if (startDate && endDate && endDate < startDate) fail('תאריך הסיום לפני תאריך ההתחלה');
+      db.settings.startDate = startDate;
+      db.settings.endDate = endDate;
+    }
     if (req.weeklyLimit !== undefined) db.settings.weeklyLimit = parseLimit(req.weeklyLimit);
     if (req.lessonsPerDay && typeof req.lessonsPerDay === 'object') {
       const next = {};

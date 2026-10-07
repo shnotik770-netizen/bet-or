@@ -292,6 +292,17 @@
   .stat b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: "Rubik", sans-serif; }
   .stat span { font-size: 13px; color: var(--ink-2); }
   details summary { cursor: pointer; color: var(--teal); font-weight: 700; margin-top: 14px; }
+  .set-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .set-tile {
+    display: flex; flex-direction: column; gap: 4px; text-align: start; padding: 14px 16px; border-radius: 18px;
+    background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--c); box-shadow: var(--shadow);
+    transition: transform .12s, background .12s;
+  }
+  .set-tile:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+  .set-tile[aria-expanded="true"] { background: color-mix(in srgb, var(--c) 22%, var(--surface)); border-color: var(--c); }
+  .set-title { font: 700 16px/1.3 "Rubik", "Heebo", sans-serif; color: var(--ink); }
+  .set-sum { font-size: 13px; color: var(--ink-2); }
+  .set-panel { border-top: 6px solid var(--blush); }
   .times { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
   .sugg { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-height: 340px; overflow: auto; }
   .sugg-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 6px 12px; border-radius: 12px; background: var(--surface-2); font-size: 14px; }
@@ -589,6 +600,8 @@
     return '--c: var(--c-' + CUSHIONS[x % CUSHIONS.length] + ')';
   }
 
+  function fmtShortHeb(s) { return hebDate(s) || fmtShort(s); }
+
   /** Hebrew date first, Gregorian smaller: "יום שלישי כ״ה תשרי 6.10". */
   function dateEl(s, noDay) {
     const hd = hebDate(s);
@@ -654,6 +667,7 @@
     fbFilter: { teacher: '', q: '' },
     adminData: null,
     adminTab: 'teachers',
+    settingsOpen: null,
     adminFilter: { teacher: '', range: 'upcoming' },
     suggestions: null,
   };
@@ -1188,62 +1202,104 @@
 
   function renderSettingsAdmin(A) {
     const st = A.settings;
-    const start = h('input', { type: 'date', value: st.startDate || '' });
-    const end = h('input', { type: 'date', value: st.endDate || '' });
-    const wl = h('input', { type: 'number', min: 0, max: 30, step: 1, inputmode: 'numeric', value: st.weeklyLimit || '', placeholder: 'ללא הגבלה', style: 'max-width:160px' });
-    const perDay = [0, 1, 2, 3, 4, 5].map(d => h('input', {
-      type: 'number', min: 0, max: A.maxLessons, step: 1, inputmode: 'numeric', value: A.lessonsByDay[d], 'data-day': d,
-    }));
-    const ahead = h('input', { type: 'number', min: 1, max: A.maxDaysAhead, step: 1, inputmode: 'numeric', value: st.daysAhead || A.defaultDaysAhead, style: 'max-width:160px' });
-    const times = Array.from({ length: A.lessonCount }, (_, i) => h('input', {
-      value: (st.lessonTimes || [])[i] || '', placeholder: i === 0 ? 'למשל 08:00–08:45' : '', maxlength: 20, style: 'direction:ltr;text-align:right',
-    }));
-    const vFrom = h('input', { type: 'date', required: true });
-    const vTo = h('input', { type: 'date' });
-    const vName = h('input', { placeholder: 'למשל: חופשת חנוכה', maxlength: 40 });
-    vFrom.addEventListener('change', () => { if (!vTo.value || vTo.value < vFrom.value) vTo.value = vFrom.value; });
+    const save = (fields, msg) => adminUpdate(call('adminSaveSettings', fields), msg || 'נשמר').catch(() => {});
+    const dayShort = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳'];
+    const perDaySummary = (() => {
+      const groups = [];
+      [0, 1, 2, 3, 4, 5].forEach(d => {
+        const n = A.lessonsByDay[d], g = groups[groups.length - 1];
+        if (g && g.n === n) g.to = d; else groups.push({ from: d, to: d, n: n });
+      });
+      return groups.map(g => (g.from === g.to ? dayShort[g.from] : dayShort[g.from] + '–' + dayShort[g.to]) + ': ' + g.n).join(' · ');
+    })();
+    const upcomingBlocks = st.blockedSlots.filter(b => b.date >= A.today).length;
+    const upcomingVac = st.vacations.filter(v => v.to >= A.today).length;
+    const timesSet = (st.lessonTimes || []).filter(Boolean).length;
 
-    const suggBox = h('div');
-    function renderSugg() {
-      if (!S.suggestions) { fill(suggBox, h('p', { class: 'hint' }, 'טוען…')); return; }
-      const taken = d => st.vacations.some(v => d >= v.from && d <= v.to);
-      fill(suggBox, h('div', { class: 'sugg' }, S.suggestions.map(s => h('div', { class: 'sugg-row' },
-        h('span', null, h('b', null, dateEl(s.date)), ' · ' + s.names.join(', ')),
-        taken(s.date) ? h('span', { class: 'hint' }, 'כבר חופש')
-          : h('button', { class: 'btn small', type: 'button', onclick: () => {
-            adminUpdate(call('adminAddVacation', { from: s.date, to: s.date, name: s.names[0] }), 'נוסף כיום חופש').catch(() => {});
-          } }, '+ יום חופש')))));
-    }
+    const SECTIONS = [
+      { key: 'period', title: 'תקופת הפעילות', c: 'petrol',
+        sum: st.startDate || st.endDate ? (st.startDate ? fmtShortHeb(st.startDate) : '…') + ' – ' + (st.endDate ? fmtShortHeb(st.endDate) : '…') : 'ללא הגבלה', render: periodSection },
+      { key: 'perday', title: 'שיעורים בכל יום', c: 'powder', sum: perDaySummary, render: perDaySection },
+      { key: 'times', title: 'שעות השיעורים', c: 'sage', sum: timesSet ? 'הוגדרו ' + timesSet + ' שעות' : 'לא הוגדרו', render: timesSection },
+      { key: 'ahead', title: 'הרשמה מראש', c: 'cream', sum: (st.daysAhead || A.defaultDaysAhead) + ' ימים קדימה', render: aheadSection },
+      { key: 'limit', title: 'מגבלת שעות שבועית', c: 'slate', sum: st.weeklyLimit ? st.weeklyLimit + ' שעות לכל מורה' : 'ללא הגבלה', render: limitSection },
+      { key: 'blocks', title: 'חסימת שיעורים ביום', c: 'rose', sum: upcomingBlocks ? (upcomingBlocks === 1 ? 'יום אחד עם חסימות' : upcomingBlocks + ' ימים עם חסימות') : 'אין חסימות', render: () => renderBlocksPanel(A) },
+      { key: 'vacations', title: 'ימי חופש', c: 'olive', sum: upcomingVac ? (upcomingVac === 1 ? 'חופשה קרובה אחת' : upcomingVac + ' חופשות קרובות') : 'לא הוגדרו', render: vacationsSection },
+    ];
+    const open = SECTIONS.find(x => x.key === S.settingsOpen);
 
     return h('div', null,
-      h('div', { class: 'panel' },
-        h('h2', null, 'תקופת הפעילות'),
-        h('p', { class: 'muted' }, 'המורות יכולות להשתבץ רק לימים בתוך התקופה (למשל: שנת הלימודים). אפשר להשאיר ריק – ואז אין הגבלה.'),
+      h('div', { class: 'set-tiles' }, SECTIONS.map(x => h('button', {
+        type: 'button', class: 'set-tile', style: '--c: var(--c-' + x.c + ')', 'aria-expanded': String(open === x),
+        onclick: () => { S.settingsOpen = open === x ? null : x.key; renderAdmin(); },
+      }, h('span', { class: 'set-title' }, x.title), h('span', { class: 'set-sum' }, x.sum)))),
+      open ? open.render() : h('p', { class: 'empty-msg' }, 'בחרי נושא כדי לערוך אותו.'));
+
+    function section(title, desc, body, onSave) {
+      return h('div', { class: 'panel set-panel' },
+        h('h2', null, title),
+        desc ? h('p', { class: 'muted' }, desc) : null,
+        body,
+        onSave ? h('div', { style: 'margin-top:14px' }, h('button', { class: 'btn primary', type: 'button', onclick: onSave }, 'שמירה')) : null);
+    }
+
+    function periodSection() {
+      const start = h('input', { type: 'date', value: st.startDate || '' });
+      const end = h('input', { type: 'date', value: st.endDate || '' });
+      return section('תקופת הפעילות', 'המורות יכולות להשתבץ רק לימים בתוך התקופה (למשל: שנת הלימודים). אפשר להשאיר ריק – ואז אין הגבלה.',
         h('div', { class: 'row' }, h('label', null, 'מתאריך', start), h('label', null, 'עד תאריך', end)),
-        h('h2', { style: 'margin-top:20px;font-size:18px' }, 'מספר השיעורים בכל יום'),
-        h('p', { class: 'muted' }, 'השינוי חל רק על שיבוצים חדשים. שיבוצים שכבר נעשו נשארים במקומם ומופיעים בלוח. 0 = אין שיעורים ביום הזה.'),
-        h('div', { class: 'times' }, perDay.map((inp, d) => h('label', null, 'יום ' + DAY_NAMES[d], inp))),
-        h('h2', { style: 'margin-top:20px;font-size:18px' }, 'כמה זמן מראש אפשר להשתבץ'),
-        h('p', { class: 'muted' }, 'מספר הימים קדימה שבהם המורות יכולות להשתבץ (ברירת המחדל: 10 ימים, שבוע וחצי). בכל יום נפתח יום נוסף.'),
-        h('label', { style: 'max-width:220px' }, 'ימים מראש', ahead),
-        h('h2', { style: 'margin-top:20px;font-size:18px' }, 'מגבלת שעות שבועית'),
-        h('p', { class: 'muted' }, 'כמה שיעורים כל מורה יכולה לשבץ בכל שבוע. ריק = ללא הגבלה. אפשר לקבוע מגבלה אחרת למורה מסוימת ברשימת המורות (עריכה). ההנהלה יכולה לשבץ גם מעבר למגבלה.'),
-        h('label', { style: 'max-width:220px' }, 'שעות בשבוע לכל מורה', wl),
-        h('h2', { style: 'margin-top:20px;font-size:18px' }, 'שעות השיעורים'),
-        h('p', { class: 'muted' }, 'יופיעו ליד כל שיעור בלוח. לא חובה.'),
+        () => save({ startDate: start.value, endDate: end.value }, 'תקופת הפעילות נשמרה'));
+    }
+
+    function perDaySection() {
+      const inputs = [0, 1, 2, 3, 4, 5].map(d => h('input', {
+        type: 'number', min: 0, max: A.maxLessons, step: 1, inputmode: 'numeric', value: A.lessonsByDay[d], 'data-day': d,
+      }));
+      return section('מספר השיעורים בכל יום', 'השינוי חל רק על שיבוצים חדשים. שיבוצים שכבר נעשו נשארים במקומם ומופיעים בלוח. 0 = אין שיעורים ביום הזה.',
+        h('div', { class: 'times' }, inputs.map((inp, d) => h('label', null, 'יום ' + DAY_NAMES[d], inp))),
+        () => save({ lessonsPerDay: inputs.reduce((o, inp, d) => { o[d] = inp.value.trim() === '' ? 0 : Number(inp.value); return o; }, {}) }, 'מספר השיעורים נשמר'));
+    }
+
+    function timesSection() {
+      const times = Array.from({ length: A.lessonCount }, (_, i) => h('input', {
+        value: (st.lessonTimes || [])[i] || '', placeholder: i === 0 ? 'למשל 08:00–08:45' : '', maxlength: 20, style: 'direction:ltr;text-align:right',
+      }));
+      return section('שעות השיעורים', 'יופיעו ליד כל שיעור בלוח. לא חובה.',
         h('div', { class: 'times' }, times.map((inp, i) => h('label', null, 'שיעור ' + (i + 1), inp))),
-        h('div', { style: 'margin-top:14px' }, h('button', {
-          class: 'btn primary', type: 'button',
-          onclick: () => adminUpdate(call('adminSaveSettings', { startDate: start.value, endDate: end.value, weeklyLimit: wl.value.trim(), daysAhead: ahead.value.trim(),
-            lessonsPerDay: perDay.reduce((o, inp, d) => { o[d] = inp.value.trim() === '' ? 0 : Number(inp.value); return o; }, {}),
-            lessonTimes: Array.from({ length: A.maxLessons }, (_, i) => (times[i] ? times[i].value.trim() : (st.lessonTimes || [])[i] || '')) }), 'ההגדרות נשמרו').catch(() => {}),
-        }, 'שמירה'))),
+        () => save({ lessonTimes: Array.from({ length: A.maxLessons }, (_, i) => (times[i] ? times[i].value.trim() : (st.lessonTimes || [])[i] || '')) }, 'שעות השיעורים נשמרו'));
+    }
 
-      renderBlocksPanel(A),
+    function aheadSection() {
+      const ahead = h('input', { type: 'number', min: 1, max: A.maxDaysAhead, step: 1, inputmode: 'numeric', value: st.daysAhead || A.defaultDaysAhead, style: 'max-width:160px' });
+      return section('כמה זמן מראש אפשר להשתבץ', 'מספר הימים קדימה שבהם המורות יכולות להשתבץ (ברירת המחדל: 10 ימים, שבוע וחצי). בכל יום נפתח יום נוסף.',
+        h('label', { style: 'max-width:220px' }, 'ימים מראש', ahead),
+        () => save({ daysAhead: ahead.value.trim() }, 'נשמר'));
+    }
 
-      h('div', { class: 'panel' },
-        h('h2', null, 'ימי חופש'),
-        h('p', { class: 'muted' }, 'בימים האלה המרחב סגור ולא ניתן להשתבץ. אפשר יום בודד או טווח של כמה ימים.'),
+    function limitSection() {
+      const wl = h('input', { type: 'number', min: 0, max: 30, step: 1, inputmode: 'numeric', value: st.weeklyLimit || '', placeholder: 'ללא הגבלה', style: 'max-width:160px' });
+      return section('מגבלת שעות שבועית', 'כמה שיעורים כל מורה יכולה לשבץ בכל שבוע. ריק = ללא הגבלה. אפשר לקבוע מגבלה אחרת למורה מסוימת ברשימת המורות (עריכה). ההנהלה יכולה לשבץ גם מעבר למגבלה.',
+        h('label', { style: 'max-width:220px' }, 'שעות בשבוע לכל מורה', wl),
+        () => save({ weeklyLimit: wl.value.trim() }, 'המגבלה נשמרה'));
+    }
+
+    function vacationsSection() {
+      const vFrom = h('input', { type: 'date', required: true });
+      const vTo = h('input', { type: 'date' });
+      const vName = h('input', { placeholder: 'למשל: חופשת חנוכה', maxlength: 40 });
+      vFrom.addEventListener('change', () => { if (!vTo.value || vTo.value < vFrom.value) vTo.value = vFrom.value; });
+      const suggBox = h('div');
+      function renderSugg() {
+        if (!S.suggestions) { fill(suggBox, h('p', { class: 'hint' }, 'טוען…')); return; }
+        const taken = d => st.vacations.some(v => d >= v.from && d <= v.to);
+        fill(suggBox, h('div', { class: 'sugg' }, S.suggestions.map(x => h('div', { class: 'sugg-row' },
+          h('span', null, h('b', null, dateEl(x.date)), ' · ' + x.names.join(', ')),
+          taken(x.date) ? h('span', { class: 'hint' }, 'כבר חופש')
+            : h('button', { class: 'btn small', type: 'button', onclick: () => {
+              adminUpdate(call('adminAddVacation', { from: x.date, to: x.date, name: x.names[0] }), 'נוסף כיום חופש').catch(() => {});
+            } }, '+ יום חופש')))));
+      }
+      return section('ימי חופש', 'בימים האלה המרחב סגור ולא ניתן להשתבץ. אפשר יום בודד או טווח של כמה ימים.', [
         h('form', {
           class: 'row', onsubmit: (ev) => {
             ev.preventDefault();
@@ -1267,7 +1323,9 @@
             renderSugg();
             call('adminHolidaySuggestions').then(list => { S.suggestions = list; renderSugg(); }).catch(err => toast(errMsg(err), true));
           },
-        }, h('summary', null, 'הצעות מהלוח העברי (חגים וימים מיוחדים בחודשים הקרובים)'), suggBox)));
+        }, h('summary', null, 'הצעות מהלוח העברי (חגים וימים מיוחדים בחודשים הקרובים)'), suggBox),
+      ]);
+    }
   }
 
   function renderBlocksPanel(A) {
@@ -1284,7 +1342,7 @@
     });
     const lessonList = ls => ls.length > 1 && ls[ls.length - 1] - ls[0] === ls.length - 1 ? 'שיעורים ' + ls[0] + '–' + ls[ls.length - 1] : (ls.length > 1 ? 'שיעורים ' : 'שיעור ') + ls.join(', ');
     const upcoming = st.blockedSlots.filter(b => b.date >= A.today);
-    return h('div', { class: 'panel' },
+    return h('div', { class: 'panel set-panel' },
       h('h2', null, 'חסימת שיעורים ביום מסוים'),
       h('p', { class: 'muted' }, 'בוחרים יום ושיעורים שבהם המרחב לא זמין (למשל אירוע או מבחן). המשבצות יופיעו כ"לא זמין" ולא יהיה אפשר להשתבץ אליהן. כהנהלה אפשר לשבץ בהן בכל זאת.'),
       h('form', {
