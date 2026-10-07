@@ -314,6 +314,9 @@ function adminData() {
       future: db.bookings.filter(b => b.seriesId === x.id && b.date >= w.today).length,
     })),
     waitingCount: db.waitlist.filter(x => x.date >= w.today).length,
+    feedback: db.bookings.filter(b => b.feedback && b.feedback.text)
+      .map(b => Object.assign(publicBooking(b, null), { feedback: b.feedback, canEdit: true }))
+      .sort((a, b) => (b.date + b.lesson).localeCompare(a.date + a.lesson)),
   };
 }
 
@@ -716,6 +719,20 @@ const api = {
     db.series = db.series.filter(s => s !== x);
     save();
     return adminData();
+  },
+
+  /** מחיקת משובים: רשימת מזהי שיבוצים, או 'all' למחיקת כל המשובים. השיבוצים עצמם נשארים. */
+  adminDeleteFeedback(ctx, ids) {
+    requireAdmin(ctx);
+    const all = ids === 'all';
+    const set = new Set(Array.isArray(ids) ? ids.map(String) : []);
+    if (!all && !set.size) fail('לא נבחרו משובים');
+    let n = 0;
+    db.bookings.forEach(b => {
+      if (b.feedback && (all || set.has(b.id))) { delete b.feedback; n++; }
+    });
+    save();
+    return Object.assign(adminData(), { deleted: n });
   },
 
   adminCancel(ctx, id) {

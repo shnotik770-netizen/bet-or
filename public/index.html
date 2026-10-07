@@ -703,6 +703,7 @@
     adminTab: 'teachers',
     settingsOpen: null,
     adminFilter: { teacher: '', range: 'upcoming' },
+    fbAdmin: { teacher: '', selected: {} },
     suggestions: null,
   };
 
@@ -1069,9 +1070,10 @@
     return call('saveFeedback', { id: fbTarget.id, text: text, rating: fbRating }).then(data => {
       S.fb = data;
       $('fbDlg').close();
-      toast(text ? 'המשוב פורסם – תודה! 🙏' : 'המשוב נמחק');
+      toast(route() === 'admin' ? (text ? 'המשוב עודכן' : 'המשוב נמחק') : (text ? 'המשוב פורסם – תודה! 🙏' : 'המשוב נמחק'));
       if (text) S.flashId = fbTarget.id;
       if (route() === 'feedback') renderFeedback();
+      if (route() === 'admin') loadAdmin();
       refresh();
     }).catch(e => { $('fbSubmit').disabled = false; toast(errMsg(e), true); });
   }
@@ -1172,12 +1174,12 @@
     const A = S.adminData, root = $('adminView');
     if (!A) { fill(root, h('div', { class: 'loading' }, 'טוען…')); return; }
     const tabs = h('div', { class: 'admin-tabs', role: 'tablist' },
-      [['teachers', 'מורות וטלפונים'], ['settings', 'תאריכים וימי חופש'], ['series', 'שיבוצים קבועים'], ['bookings', 'כל השיבוצים']].map(t => h('button', {
+      [['teachers', 'מורות וטלפונים'], ['settings', 'תאריכים וימי חופש'], ['series', 'שיבוצים קבועים'], ['bookings', 'כל השיבוצים'], ['feedback', 'משובים']].map(t => h('button', {
         type: 'button', role: 'tab', 'aria-selected': String(S.adminTab === t[0]),
         onclick: () => { S.adminTab = t[0]; renderAdmin(); },
       }, t[1])));
     const body = S.adminTab === 'teachers' ? renderTeachersAdmin(A) : S.adminTab === 'settings' ? renderSettingsAdmin(A)
-      : S.adminTab === 'series' ? renderSeriesAdmin(A) : renderBookingsAdmin(A);
+      : S.adminTab === 'series' ? renderSeriesAdmin(A) : S.adminTab === 'feedback' ? renderFeedbackAdmin(A) : renderBookingsAdmin(A);
     fill(root, tabs, body);
   }
 
@@ -1485,6 +1487,63 @@
                 .then(ok => { if (ok) adminUpdate(call('adminDeleteSeries', x.id), 'השיבוץ הקבוע בוטל').catch(() => {}); }),
             }, 'ביטול'))))))))
           : h('p', { class: 'empty-msg' }, 'אין שיבוצים קבועים.')));
+  }
+
+  function renderFeedbackAdmin(A) {
+    const F = S.fbAdmin;
+    const lessons = (S.data && S.data.config.lessons) || [];
+    const names = Array.from(new Set(A.feedback.map(b => b.teacher))).sort((a, b) => a.localeCompare(b, 'he'));
+    const rows = A.feedback.filter(b => !F.teacher || b.teacher === F.teacher);
+    Object.keys(F.selected).forEach(id => { if (!A.feedback.some(b => b.id === id)) delete F.selected[id]; });
+    const selectedIds = rows.filter(b => F.selected[b.id]).map(b => b.id);
+    const teacherSel = h('select', { onchange: (e) => { F.teacher = e.target.value; F.selected = {}; renderAdmin(); } },
+      h('option', { value: '' }, 'כל המורות'), names.map(n => h('option', { value: n }, n)));
+    teacherSel.value = F.teacher;
+    const allBox = h('input', { type: 'checkbox', 'aria-label': 'סימון הכול', onchange: (e) => { rows.forEach(b => { F.selected[b.id] = e.target.checked; }); renderAdmin(); } });
+    allBox.checked = rows.length > 0 && selectedIds.length === rows.length;
+    allBox.indeterminate = selectedIds.length > 0 && selectedIds.length < rows.length;
+
+    function del(ids, text) {
+      confirmBox('למחוק משובים?', text + ' השיבוצים עצמם יישארו בלוח. אי אפשר לשחזר.', 'מחיקה').then(ok => {
+        if (!ok) return;
+        call('adminDeleteFeedback', ids).then(data => {
+          S.adminData = data; F.selected = {}; renderAdmin(); toast(data.deleted === 1 ? 'המשוב נמחק' : 'נמחקו ' + data.deleted + ' משובים'); S.fb = null;
+        }).catch(e => toast(errMsg(e), true));
+      });
+    }
+
+    return h('div', { class: 'panel' },
+      h('div', { class: 'head-row' },
+        h('div', null, h('h2', null, 'משובים'), h('p', { class: 'muted', style: 'margin:0' }, 'עריכה ומחיקה של משובים שהמורות כתבו. מחיקת משוב לא מוחקת את השיבוץ.')),
+        A.feedback.length ? h('button', {
+          class: 'btn danger', type: 'button',
+          onclick: () => F.teacher
+            ? del(rows.map(b => b.id), (rows.length === 1 ? 'יימחק המשוב של ' : 'יימחקו כל ' + rows.length + ' המשובים של ') + F.teacher + '.')
+            : del('all', A.feedback.length === 1 ? 'יימחק המשוב היחיד באתר.' : 'יימחקו כל ' + A.feedback.length + ' המשובים באתר.'),
+        }, F.teacher ? 'מחיקת כל המשובים של ' + F.teacher : 'מחיקת כל המשובים') : null),
+      A.feedback.length ? h('div', { class: 'row', style: 'margin-bottom:12px' },
+        h('label', null, 'מורה', teacherSel),
+        h('div', { style: 'flex:none' }, h('button', {
+          class: 'btn', type: 'button', disabled: !selectedIds.length,
+          onclick: () => del(selectedIds, selectedIds.length === 1 ? 'יימחק המשוב המסומן.' : 'יימחקו ' + selectedIds.length + ' משובים מסומנים.'),
+        }, 'מחיקת המסומנים' + (selectedIds.length ? ' (' + selectedIds.length + ')' : '')))) : null,
+      rows.length ? h('div', { class: 'table-wrap' }, h('table', null,
+        h('thead', null, h('tr', null, h('th', null, allBox), ['תאריך', 'מורה', 'כיתה', 'דירוג', 'משוב', ''].map(x => h('th', null, x)))),
+        h('tbody', null, rows.map(b => {
+          const box = h('input', { type: 'checkbox', 'aria-label': 'סימון', onchange: (e) => { F.selected[b.id] = e.target.checked; renderAdmin(); } });
+          box.checked = !!F.selected[b.id];
+          return h('tr', null,
+            h('td', null, box),
+            h('td', { style: 'white-space:nowrap' }, dateEl(b.date), h('div', { class: 'hint' }, lessonById(lessons, b.lesson).name)),
+            h('td', null, b.teacher),
+            h('td', null, b.className, b.topic ? h('div', { class: 'hint' }, b.topic) : null),
+            h('td', { style: 'white-space:nowrap' }, stars(b.feedback.rating) || h('span', { class: 'hint' }, '—')),
+            h('td', { style: 'max-width:380px' }, h('div', { class: 'fb-text', style: 'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden' }, b.feedback.text)),
+            h('td', null, h('div', { class: 'actions' },
+              h('button', { class: 'link', type: 'button', onclick: () => openFeedback(b) }, 'עריכה'),
+              h('button', { class: 'link danger', type: 'button', onclick: () => del([b.id], 'יימחק המשוב של ' + b.teacher + ' מ' + fmtLong(b.date) + '.') }, 'מחיקה'))));
+        }))))
+        : h('p', { class: 'empty-msg' }, 'אין משובים.'));
   }
 
   function renderBookingsAdmin(A) {
