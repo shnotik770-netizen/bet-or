@@ -183,7 +183,7 @@
     color: var(--ink-2); border-inline-end: 4px solid var(--terra); border-radius: 2px;
   }
   .lesson-label strong { color: var(--ink); font-weight: 700; }
-  .lesson-label span { font-size: 12px; direction: ltr; text-align: right; }
+  .lesson-label span { font-size: 12px; direction: ltr; text-align: right; white-space: nowrap; }
   .day-head {
     background: var(--surface); border: 1px solid var(--line); border-bottom: 5px solid var(--wood);
     border-radius: 16px; padding: 10px 12px; box-shadow: var(--shadow);
@@ -292,6 +292,43 @@
   .stat b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: "Rubik", sans-serif; }
   .stat span { font-size: 13px; color: var(--ink-2); }
   details summary { cursor: pointer; color: var(--teal); font-weight: 700; margin-top: 14px; }
+  .intro-row { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; margin-bottom: 14px; }
+  .intro-row .intro { margin-bottom: 0; flex: 1; }
+  .print-title { display: none; }
+  .notices { background: var(--wood-soft); border: 1.5px solid var(--wood-line); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .notices .n-row { display: flex; gap: 8px; align-items: baseline; }
+  .notices .btn { align-self: flex-start; margin-top: 4px; }
+  .wait { font-size: 12px; color: var(--ink-2); }
+  .wait b { color: var(--terra); }
+  .link-btn.wait-btn { color: var(--ink-2); }
+  .fixed-tag { font-size: 10px; font-weight: 700; color: var(--teal-strong); background: var(--teal-soft); border-radius: 999px; padding: 0 7px; line-height: 16px; align-self: flex-start; }
+  .series-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; align-items: end; }
+
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    :root { --bg: #fff; --surface: #fff; --shadow: none; }
+    body { background: #fff; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .top, .nav, .me, .intro-row, .mine-strip, .tabs, .notices, .footer, .slot-actions, .slot.free .free-cta, #loading, dialog, .toast { display: none !important; }
+    main.wrap { padding: 0; max-width: none; }
+    .print-title { display: flex !important; justify-content: space-between; align-items: baseline; border-bottom: 3px solid #8a3f45; padding-bottom: 6px; margin-bottom: 10px; }
+    .print-title h2 { margin: 0; font-size: 22px; color: #73333a; }
+    .print-title span { font-size: 12px; color: #555; }
+    .grid { display: grid !important; grid-template-columns: 86px repeat(var(--days), minmax(0, 1fr)) !important; grid-template-rows: auto repeat(var(--lessons), minmax(58px, auto)) !important; gap: 4px !important; }
+    .lesson-col { display: grid !important; }
+    .day { display: grid !important; }
+    .day.is-past, .slot.none { display: grid !important; }
+    .slot-label { display: none !important; }
+    .lesson-label { padding: 0 6px; }
+    .lesson-label span { font-size: 10px; }
+    .slot { padding: 5px 7px; border-radius: 8px; flex-direction: column !important; min-height: 0 !important; }
+    .slot.free { border: 1px dashed #ccc; }
+    .slot .topic { padding: 0 !important; }
+    .slot.mine::before { display: none; }
+    .day-head { padding: 5px 8px; box-shadow: none; }
+    .is-today .day-head { box-shadow: none; }
+    .is-past .slot.taken, .is-past .day-head, .is-closed .day-head { opacity: 1; }
+  }
+
   .set-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-bottom: 16px; }
   .set-tile {
     display: flex; flex-direction: column; gap: 4px; text-align: start; padding: 14px 16px; border-radius: 18px;
@@ -446,7 +483,9 @@
   <main class="wrap">
     <div id="loading" class="loading">טוען…</div>
     <section id="scheduleView" hidden>
-      <div class="intro" id="intro"></div>
+      <div class="notices" id="notices" hidden></div>
+      <div class="print-title" id="printTitle"></div>
+      <div class="intro-row"><div class="intro" id="intro"></div><button class="btn small print-btn" id="printBtn" type="button">🖨 הדפסת השבוע</button></div>
       <div class="mine-strip" id="mineStrip" hidden></div>
       <div class="tabs" role="tablist" id="tabs"></div>
       <div id="week"></div>
@@ -460,8 +499,9 @@
 <!-- Booking -->
 <dialog id="bookDlg">
   <form method="dialog" id="bookForm">
-    <h3>השתבצות לשיעור</h3>
+    <h3 id="bookTitle">השתבצות לשיעור</h3>
     <p class="dlg-sub" id="bookSummary"></p>
+    <p class="notice" id="bookNote" hidden></p>
     <label id="bTeacherWrap" hidden>מורה
       <select id="bTeacher"></select>
     </label>
@@ -860,6 +900,15 @@
     }));
 
     fill($('week'), renderWeek(weeks[S.weekIdx]));
+
+    const pws = weeks[S.weekIdx];
+    fill($('printTitle'), h('h2', null, d.config.spaceName + ' · ' + weekTitle(pws)),
+      h('span', null, hebDate(pws) + ' – ' + hebDate(addDays(pws, 5)) + '  (' + fmtShort(pws) + '–' + fmtShort(addDays(pws, 5)) + ') · ' + d.config.schoolName));
+
+    const notices = d.notices || [];
+    $('notices').hidden = !notices.length;
+    fill($('notices'), notices.map(n => h('div', { class: 'n-row' }, h('span', null, '🔔'), h('span', null, n.text))),
+      notices.length ? h('button', { class: 'btn small', type: 'button', onclick: () => call('markNoticesRead').then(refresh, e => toast(errMsg(e), true)) }, 'הבנתי') : null);
   }
 
   function myCount(ws) {
@@ -909,10 +958,18 @@
       const manage = b.mine || !!S.adminCode;
       const canCancel = manage && date >= today;
       const canFeedback = manage && date <= today && !b.hasFeedback;
+      const wl = (S.data.waitlist || {})[date + '|' + l.id];
+      const canWait = st === 'open' && S.me && !b.mine;
       return h('div', { class: 'slot taken' + (b.mine ? ' mine' : ''), style: teacherColor(b.teacher) },
         label,
         h('div', { class: 'who' }, h('strong', null, b.teacher), h('span', { class: 'cls' }, b.className)),
+        b.fixed ? h('span', { class: 'fixed-tag', title: 'שיבוץ קבוע שקבעה ההנהלה' }, 'קבוע') : null,
         b.topic ? h('div', { class: 'topic', title: b.topic }, b.topic) : null,
+        wl && wl.mine ? h('div', { class: 'wait' }, '⏳ את ברשימת ההמתנה (מקום ', h('b', null, wl.pos), ') · ',
+          h('button', { class: 'link-btn', type: 'button', onclick: () => leaveWait(wl.mine) }, 'יציאה'))
+          : (wl && st === 'open' ? h('div', { class: 'wait' }, '⏳ ' + (wl.count === 1 ? 'ממתינה אחת' : wl.count + ' ממתינות')) : null),
+        canWait && !(wl && wl.mine) ? h('div', { class: 'slot-actions' },
+          h('button', { class: 'link-btn wait-btn', type: 'button', onclick: () => openBook(date, l, true) }, '+ רשימת המתנה')) : null,
         (canCancel || canFeedback || b.hasFeedback) ? h('div', { class: 'slot-actions' },
           canFeedback ? h('button', { class: 'link-btn fb', type: 'button', onclick: () => openFeedback(b) }, '✎ כתיבת משוב') : null,
           b.hasFeedback ? h('a', { class: 'link-btn fb', href: '#/feedback', onclick: () => { S.flashId = b.id; } }, '💬 משוב') : null,
@@ -938,10 +995,14 @@
 
   /* ---------- Booking ---------- */
   let pending = null;
-  function openBook(date, l) {
-    pending = { date: date, lesson: l.id };
+  function openBook(date, l, wait) {
+    pending = { date: date, lesson: l.id, wait: !!wait };
+    $('bookTitle').textContent = wait ? 'הצטרפות לרשימת המתנה' : 'השתבצות לשיעור';
+    $('bookNote').hidden = !wait;
+    $('bookNote').textContent = 'השיעור תפוס כרגע. אם הוא יתפנה – תשובצי אליו אוטומטית לפי סדר ההצטרפות, ותקבלי הודעה כאן באתר.';
+    $('bookSubmit').textContent = wait ? 'הצטרפות להמתנה' : 'שיבוץ';
     $('bookSummary').textContent = fmtLong(date) + ' · ' + l.name + (l.time ? ' ' + l.time : '') + ' · ' + weekTitle(addDays(date, -dow(date)));
-    const pickTeacher = !!S.adminCode;
+    const pickTeacher = !!S.adminCode && !wait;
     $('bTeacherWrap').hidden = !pickTeacher;
     $('bTeacher').required = pickTeacher;
     if (pickTeacher) {
@@ -962,14 +1023,14 @@
     ev.preventDefault();
     const className = $('bClass').value.trim();
     const req = { date: pending.date, lesson: pending.lesson, className: className, topic: $('bTopic').value.trim() };
-    if (S.adminCode) req.teacherId = $('bTeacher').value;
+    if (S.adminCode && !pending.wait) req.teacherId = $('bTeacher').value;
     $('bookSubmit').disabled = true;
-    call('book', req).then(() => {
+    call(pending.wait ? 'joinWaitlist' : 'book', req).then(() => {
       let classes = [];
       try { classes = JSON.parse(store.get('beitor.classes') || '[]'); } catch (e) { /* ignore */ }
       store.set('beitor.classes', JSON.stringify([className].concat(classes.filter(c => c !== className)).slice(0, 8)));
       $('bookDlg').close();
-      toast('השתבצת בהצלחה! נתראה בבית אור ✨');
+      toast(pending.wait ? 'נוספת לרשימת ההמתנה ⏳' : 'השתבצת בהצלחה! נתראה בבית אור ✨');
       return refresh();
     }).catch(e => {
       $('bookSubmit').disabled = false;
@@ -977,6 +1038,12 @@
       if (/תפוסה/.test(errMsg(e))) { $('bookDlg').close(); refresh(); }
     });
   });
+
+  function leaveWait(id) {
+    call('leaveWaitlist', id).then(() => { toast('יצאת מרשימת ההמתנה'); return refresh(); }).catch(e => toast(errMsg(e), true));
+  }
+
+  $('printBtn').addEventListener('click', () => window.print());
 
   function askCancel(b) {
     confirmBox('לבטל את השיבוץ?', fmtLong(b.date) + ' · ' + lessonName(b.lesson) + ' · ' + b.teacher + ' · ' + b.className, 'כן, לבטל')
@@ -1114,11 +1181,12 @@
     const A = S.adminData, root = $('adminView');
     if (!A) { fill(root, h('div', { class: 'loading' }, 'טוען…')); return; }
     const tabs = h('div', { class: 'admin-tabs', role: 'tablist' },
-      [['teachers', 'מורות וטלפונים'], ['settings', 'תאריכים וימי חופש'], ['bookings', 'כל השיבוצים']].map(t => h('button', {
+      [['teachers', 'מורות וטלפונים'], ['settings', 'תאריכים וימי חופש'], ['series', 'שיבוצים קבועים'], ['bookings', 'כל השיבוצים']].map(t => h('button', {
         type: 'button', role: 'tab', 'aria-selected': String(S.adminTab === t[0]),
         onclick: () => { S.adminTab = t[0]; renderAdmin(); },
       }, t[1])));
-    const body = S.adminTab === 'teachers' ? renderTeachersAdmin(A) : S.adminTab === 'settings' ? renderSettingsAdmin(A) : renderBookingsAdmin(A);
+    const body = S.adminTab === 'teachers' ? renderTeachersAdmin(A) : S.adminTab === 'settings' ? renderSettingsAdmin(A)
+      : S.adminTab === 'series' ? renderSeriesAdmin(A) : renderBookingsAdmin(A);
     fill(root, tabs, body);
   }
 
@@ -1368,6 +1436,64 @@
             onclick: () => adminUpdate(call('adminDeleteBlock', b.id), 'החסימה הוסרה').catch(() => {}),
           }, 'הסרה'))))))))
         : h('p', { class: 'empty-msg' }, 'אין שיעורים חסומים.'));
+  }
+
+  function renderSeriesAdmin(A) {
+    const teacherSel = h('select', { required: true }, h('option', { value: '' }, 'בחרי מורה…'),
+      A.teachers.filter(t => t.active).sort((a, b) => a.name.localeCompare(b.name, 'he')).map(t => h('option', { value: t.id }, t.name)));
+    const daySel = h('select', { required: true }, [0, 1, 2, 3, 4, 5].filter(d => A.lessonsByDay[d] > 0).map(d => h('option', { value: d }, 'יום ' + DAY_NAMES[d])));
+    const lessonSel = h('select', { required: true });
+    function syncLessons() {
+      const n = A.lessonsByDay[daySel.value] || A.lessonCount, cur = lessonSel.value;
+      fill(lessonSel, Array.from({ length: n }, (_, i) => h('option', { value: i + 1 }, 'שיעור ' + (i + 1) + ((A.settings.lessonTimes || [])[i] ? ' · ' + A.settings.lessonTimes[i] : ''))));
+      if (cur && Number(cur) <= n) lessonSel.value = cur;
+    }
+    daySel.addEventListener('change', syncLessons);
+    syncLessons();
+    const cls = h('input', { required: true, maxlength: 30, placeholder: 'למשל: ה׳2' });
+    const topic = h('input', { maxlength: 120, placeholder: 'לא חובה' });
+    const from = h('input', { type: 'date', required: true, value: A.today });
+    const to = h('input', { type: 'date', required: true, value: A.settings.endDate || '' });
+    const result = S.seriesResult;
+    S.seriesResult = null;
+    const lessonsLabel = x => 'יום ' + DAY_NAMES[x.weekday] + ' · שיעור ' + x.lesson;
+
+    return h('div', null,
+      h('div', { class: 'panel set-panel' },
+        h('h2', null, 'שיבוץ קבוע חדש'),
+        h('p', { class: 'muted' }, 'אותו שיעור, באותו יום בשבוע, לאותה מורה – לאורך תקופה (למשל כיתה שיש לה שעה קבועה במרחב). השיבוצים נוצרים מראש בלוח, גם מעבר לימי ההרשמה הרגילים. ימי חופש, שיעורים חסומים ושעות תפוסות מדולגים.'),
+        h('form', {
+          class: 'series-form',
+          onsubmit: (ev) => {
+            ev.preventDefault();
+            call('adminCreateSeries', { teacherId: teacherSel.value, weekday: Number(daySel.value), lesson: Number(lessonSel.value), className: cls.value.trim(), topic: topic.value.trim(), from: from.value, to: to.value })
+              .then(data => { S.adminData = data; S.seriesResult = data.result; renderAdmin(); toast('נוצרו ' + data.result.created + ' שיבוצים'); refresh(); })
+              .catch(e => toast(errMsg(e), true));
+          },
+        },
+          h('label', null, 'מורה', teacherSel), h('label', null, 'יום בשבוע', daySel), h('label', null, 'שיעור', lessonSel),
+          h('label', null, 'כיתה', cls), h('label', null, 'נושא', topic),
+          h('label', null, 'מתאריך', from), h('label', null, 'עד תאריך', to),
+          h('div', null, h('button', { class: 'btn primary', type: 'submit' }, '+ יצירת שיבוץ קבוע'))),
+        result ? h('div', { class: 'notice' },
+          h('b', null, 'נוצרו ' + result.created + ' שיבוצים.'),
+          result.skipped.length ? [' תאריכים שדולגו:', h('ul', null, result.skipped.map(x => h('li', null, dateEl(x.date), ' – ' + x.reason)))] : null) : null),
+      h('div', { class: 'panel' },
+        h('h2', null, 'שיבוצים קבועים קיימים'),
+        A.series.length ? h('div', { class: 'table-wrap' }, h('table', null,
+          h('thead', null, h('tr', null, ['מורה', 'מתי', 'כיתה', 'תקופה', 'שיעורים קרובים', ''].map(x => h('th', null, x)))),
+          h('tbody', null, A.series.map(x => h('tr', null,
+            h('td', null, h('strong', null, x.teacher)),
+            h('td', null, lessonsLabel(x)),
+            h('td', null, x.className, x.topic ? h('div', { class: 'hint' }, x.topic) : null),
+            h('td', null, dateEl(x.from, true), ' – ', dateEl(x.to, true)),
+            h('td', { class: 'num' }, x.future),
+            h('td', null, h('div', { class: 'actions' }, h('button', {
+              class: 'link danger', type: 'button',
+              onclick: () => confirmBox('לבטל את השיבוץ הקבוע?', x.teacher + ' · ' + lessonsLabel(x) + ' · ' + x.className + ' – יימחקו ' + x.future + ' השיבוצים הקרובים (שיעורים שעברו יישארו).', 'כן, לבטל')
+                .then(ok => { if (ok) adminUpdate(call('adminDeleteSeries', x.id), 'השיבוץ הקבוע בוטל').catch(() => {}); }),
+            }, 'ביטול'))))))))
+          : h('p', { class: 'empty-msg' }, 'אין שיבוצים קבועים.')));
   }
 
   function renderBookingsAdmin(A) {

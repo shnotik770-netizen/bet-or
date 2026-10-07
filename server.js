@@ -41,6 +41,12 @@ let db = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE, 'utf8')) :
 db.teachers = db.teachers || [];
 db.bookings = db.bookings || [];
 db.sessions = db.sessions || {};
+// רשימות המתנה לשיעורים תפוסים: { id, date, lesson, teacherId, className, topic, createdAt }
+db.waitlist = db.waitlist || [];
+// הודעות למורות (למשל "קיבלת שיעור מרשימת ההמתנה"): { id, teacherId, text, createdAt, read }
+db.notices = db.notices || [];
+// שיבוצים קבועים שההנהלה קבעה: { id, teacherId, teacher, weekday, lesson, className, topic, from, to, createdAt }
+db.series = db.series || [];
 // הגדרות שהמנהלת קובעת: תקופת הפעילות, ימי חופש ושעות השיעורים
 db.settings = Object.assign({
   startDate: '', endDate: '', vacations: [], lessonTimes: [], weeklyLimit: 0,
@@ -194,6 +200,7 @@ function publicBooking(b, ctx) {
     id: b.id, date: b.date, lesson: b.lesson, teacher: b.teacher, className: b.className, topic: b.topic,
     mine: !!(ctx && ctx.teacher) && b.teacherId === ctx.teacher.id,
     hasFeedback: !!(b.feedback && b.feedback.text),
+    fixed: !!b.seriesId,
   };
 }
 
@@ -233,6 +240,62 @@ function resolveCtx(auth) {
   return ctx;
 }
 
+/** Per-slot waitlist summary for the schedule: count, and my place in line. */
+function waitlistView(ctx, w) {
+  const out = {};
+  db.waitlist.filter(x => x.date >= w.today && x.date <= w.end)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach(x => {
+      const k = x.date + '|' + x.lesson;
+      const v = out[k] || (out[k] = { count: 0 });
+      v.count++;
+      if (ctx.teacher && x.teacherId === ctx.teacher.id) { v.mine = x.id; v.pos = v.count; }
+    });
+  return out;
+}
+
+function shortDate(d) { return Number(d.slice(8)) + '.' + Number(d.slice(5, 7)); }
+
+function hoursText(n) { return n === 1 ? 'שעה אחת' : n + ' שעות'; }
+
+function notify(teacherId, text) {
+  db.notices.push({ id: crypto.randomUUID(), teacherId, text, createdAt: new Date().toISOString(), read: false });
+}
+
+/**
+ * A slot was freed: give it to the first teacher on its waitlist who can still take it
+ * (active, under her weekly limit), and leave her a notice. Caller saves.
+ */
+function promoteWaitlist(date, lesson) {
+  const today = windowNow().today;
+  db.waitlist = db.waitlist.filter(x => x.date >= today);
+  if (date < today || db.bookings.some(b => b.date === date && b.lesson === lesson)) return;
+  const queue = db.waitlist.filter(x => x.date === date && x.lesson === lesson)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  for (const entry of queue) {
+    db.waitlist = db.waitlist.filter(x => x !== entry);
+    const t = teacherById(entry.teacherId);
+    if (!t || !t.active) continue;
+    const limit = weeklyLimitOf(t);
+    if (limit && countInWeek(t.id, date) >= limit) {
+      notify(t.id, 'התפנה ' + 'שיעור ' + lesson + ' ב־' + shortDate(date) + ' שחיכית לו, אבל הגעת למכסה השבועית ולכן הוא עבר הלאה.');
+      continue;
+    }
+    db.bookings.push({
+      id: crypto.randomUUID(), date, lesson, teacherId: t.id, teacher: t.name,
+      className: entry.className, topic: entry.topic, createdAt: new Date().toISOString(), fromWaitlist: true,
+    });
+    notify(t.id, 'התפנה השיעור שחיכית לו ושובצת אליו אוטומטית: ' + 'שיעור ' + lesson + ', ' + shortDate(date) + ' (' + entry.className + '). אם הוא כבר לא מתאים לך – אפשר לבטל בלוח.');
+    return;
+  }
+}
+
+/** Remove a booking and pass the slot to the waitlist. Caller saves. */
+function removeBooking(b) {
+  db.bookings = db.bookings.filter(x => x !== b);
+  promoteWaitlist(b.date, b.lesson);
+}
+
 function adminData() {
   const w = windowNow();
   const from = addDays(w.today, -CONFIG.FEEDBACK_DAYS);
@@ -247,6 +310,10 @@ function adminData() {
     defaultDaysAhead: CONFIG.DAYS_AHEAD,
     bookings: db.bookings.filter(b => b.date >= from).map(b => publicBooking(b, null))
       .sort((a, b) => (a.date + a.lesson).localeCompare(b.date + b.lesson)),
+    series: db.series.map(x => Object.assign({}, x, {
+      future: db.bookings.filter(b => b.seriesId === x.id && b.date >= w.today).length,
+    })),
+    waitingCount: db.waitlist.filter(x => x.date >= w.today).length,
   };
 }
 
@@ -298,8 +365,49 @@ const api = {
       },
       teachers: ctx.admin ? db.teachers.filter(t => t.active).map(t => ({ id: t.id, name: t.name })) : [],
       bookings: weekBookings.map(b => publicBooking(b, ctx)),
+      waitlist: waitlistView(ctx, w),
+      notices: ctx.teacher ? db.notices.filter(n => n.teacherId === ctx.teacher.id && !n.read).map(n => ({ id: n.id, text: n.text, createdAt: n.createdAt })) : [],
       calendar: await getCalendar(w.start, w.end),
     };
+  },
+
+  /** הצטרפות לרשימת ההמתנה של שיעור תפוס. */
+  joinWaitlist(ctx, req) {
+    requireTeacher(ctx);
+    req = req || {};
+    const date = String(req.date || '');
+    const lesson = Number(req.lesson);
+    const className = clean(req.className, 30);
+    const topic = clean(req.topic, 120);
+    if (!className) fail('יש למלא כיתה');
+    if (!isBookable(date, windowNow()) || !(lesson >= 1 && lesson <= lessonsOnDay(date))) fail('לא ניתן להצטרף להמתנה לשיעור הזה');
+    if (slotBlocked(date, lesson)) fail('השיעור הזה לא זמין');
+    const taken = db.bookings.find(b => b.date === date && b.lesson === lesson);
+    if (!taken) fail('השיעור פנוי – אפשר פשוט להשתבץ אליו');
+    if (taken.teacherId === ctx.teacher.id) fail('השיעור כבר שלך');
+    if (db.waitlist.some(x => x.date === date && x.lesson === lesson && x.teacherId === ctx.teacher.id)) fail('את כבר ברשימת ההמתנה לשיעור הזה');
+    db.waitlist.push({ id: crypto.randomUUID(), date, lesson, teacherId: ctx.teacher.id, className, topic, createdAt: new Date().toISOString() });
+    save();
+    return api.getState(ctx);
+  },
+
+  leaveWaitlist(ctx, id) {
+    requireTeacher(ctx);
+    const before = db.waitlist.length;
+    db.waitlist = db.waitlist.filter(x => !(x.id === id && x.teacherId === ctx.teacher.id));
+    if (db.waitlist.length === before) fail('לא נמצאת ברשימת ההמתנה');
+    save();
+    return api.getState(ctx);
+  },
+
+  markNoticesRead(ctx) {
+    requireTeacher(ctx);
+    db.notices.forEach(n => { if (n.teacherId === ctx.teacher.id) n.read = true; });
+    // Keep only recent notices.
+    const cutoff = new Date(Date.now() - 90 * 864e5).toISOString();
+    db.notices = db.notices.filter(n => !n.read || n.createdAt > cutoff);
+    save();
+    return api.getState(ctx);
   },
 
   book(ctx, req) {
@@ -339,7 +447,7 @@ const api = {
     if (!b) fail('השיבוץ לא נמצא (אולי כבר בוטל)');
     if (!canManage(ctx, b)) fail('אפשר לבטל רק שיבוץ שלך');
     if (b.date < windowNow().today && !ctx.admin) fail('לא ניתן לבטל שיעור שכבר עבר');
-    db.bookings = db.bookings.filter(x => x !== b);
+    removeBooking(b);
     save();
     return api.getState(ctx);
   },
@@ -415,6 +523,7 @@ const api = {
     if (existing) {
       existing.name = name; existing.phone = phone; existing.active = active; existing.weeklyLimit = weeklyLimit;
       db.bookings.forEach(b => { if (b.teacherId === existing.id) b.teacher = name; });
+      db.series.forEach(x => { if (x.teacherId === existing.id) x.teacher = name; });
     } else {
       db.teachers.push({ id: crypto.randomUUID(), name, phone, active, weeklyLimit });
     }
@@ -448,6 +557,7 @@ const api = {
     const t = teacherById(String(id || ''));
     if (!t) fail('המורה לא נמצאה');
     db.teachers = db.teachers.filter(x => x !== t);
+    db.waitlist = db.waitlist.filter(x => x.teacherId !== t.id);
     Object.keys(db.sessions).forEach(k => { if (db.sessions[k].teacherId === t.id) delete db.sessions[k]; });
     save();
     return adminData();
@@ -550,6 +660,62 @@ const api = {
       .filter(d => CONFIG.SCHOOL_DAYS.indexOf(dow(d)) >= 0)
       .map(d => ({ date: d, names: cal.holidays[d].filter(n => !/^ראש חודש/.test(n)) }))
       .filter(x => x.names.length);
+  },
+
+  /**
+   * שיבוץ קבוע: אותו שיעור, באותו יום בשבוע, לאותה מורה, לאורך תקופה.
+   * יוצר שיבוצים אמיתיים לכל השבועות; ימים סגורים/חסומים/תפוסים מדולגים ומדווחים.
+   */
+  adminCreateSeries(ctx, req) {
+    requireAdmin(ctx);
+    req = req || {};
+    const t = teacherById(String(req.teacherId || ''));
+    if (!t) fail('יש לבחור מורה');
+    const weekday = Number(req.weekday);
+    const lesson = Number(req.lesson);
+    const className = clean(req.className, 30);
+    const topic = clean(req.topic, 120);
+    if (CONFIG.SCHOOL_DAYS.indexOf(weekday) < 0) fail('יש לבחור יום בשבוע');
+    if (!(lesson >= 1 && lesson <= CONFIG.MAX_LESSONS)) fail('יש לבחור שיעור');
+    if (!className) fail('יש למלא כיתה');
+    const today = windowNow().today;
+    let from = String(req.from || today);
+    const to = String(req.to || db.settings.endDate || '');
+    if (!DATE_RE.test(from) || !DATE_RE.test(to)) fail('יש לבחור תאריך התחלה וסיום');
+    if (from < today) from = today;
+    if (to < from) fail('תאריך הסיום לפני תאריך ההתחלה');
+    if (to > addDays(from, 400)) fail('אפשר לקבוע שיבוץ קבוע לשנה לכל היותר');
+
+    const series = { id: crypto.randomUUID(), teacherId: t.id, teacher: t.name, weekday, lesson, className, topic, from, to, createdAt: new Date().toISOString() };
+    const created = [], skipped = [];
+    let d = addDays(from, (weekday - dow(from) + 7) % 7);
+    for (; d <= to; d = addDays(d, 7)) {
+      const reason = closedReason(d) || (lesson > lessonsOnDay(d) ? 'אין שיעור ' + lesson + ' ביום הזה' : '') || slotBlocked(d, lesson);
+      const taken = db.bookings.find(b => b.date === d && b.lesson === lesson);
+      if (reason) { skipped.push({ date: d, reason }); continue; }
+      if (taken) { skipped.push({ date: d, reason: 'תפוס – ' + taken.teacher }); continue; }
+      db.bookings.push({
+        id: crypto.randomUUID(), date: d, lesson, teacherId: t.id, teacher: t.name, className, topic,
+        createdAt: new Date().toISOString(), seriesId: series.id,
+      });
+      created.push(d);
+    }
+    if (!created.length) fail('לא נוצר אף שיבוץ – כל התאריכים סגורים או תפוסים');
+    db.series.push(series);
+    save();
+    return Object.assign(adminData(), { result: { created: created.length, skipped } });
+  },
+
+  /** ביטול שיבוץ קבוע: מוחק את השיבוצים העתידיים שלו (מהיום והלאה). שיעורים שעברו נשארים. */
+  adminDeleteSeries(ctx, id) {
+    requireAdmin(ctx);
+    const x = db.series.find(s => s.id === id);
+    if (!x) fail('השיבוץ הקבוע לא נמצא');
+    const today = windowNow().today;
+    db.bookings.filter(b => b.seriesId === id && b.date >= today).forEach(removeBooking);
+    db.series = db.series.filter(s => s !== x);
+    save();
+    return adminData();
   },
 
   adminCancel(ctx, id) {
