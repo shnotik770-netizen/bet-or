@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>בית אור · שיבוץ שיעורים</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%2322335c'/%3E%3Cpath d='M24 9c4 6 9 9.5 9 16.5a9 9 0 0 1-18 0c0-4 2-6.5 3.5-8 .3 3 1.8 4.6 3.4 5.2C21 18 22 13 24 9z' fill='%23f0b440'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf6ee;
+    --surface: #ffffff;
+    --surface-2: #f4eee2;
+    --ink: #1f2a44;
+    --ink-2: #55607a;
+    --ink-3: #8a90a0;
+    --line: #e7dfcf;
+    --gold: #c98a12;
+    --gold-strong: #a86f05;
+    --gold-soft: #fbefd3;
+    --navy: #22335c;
+    --navy-soft: #e8edf7;
+    --mine: #fff4d9;
+    --mine-line: #e8b440;
+    --danger: #b3261e;
+    --shadow: 0 1px 2px rgba(31,42,68,.06), 0 4px 16px rgba(31,42,68,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161f;
+      --surface: #1a2030;
+      --surface-2: #222a3c;
+      --ink: #eef0f5;
+      --ink-2: #b3b9c8;
+      --ink-3: #7f879a;
+      --line: #2e3850;
+      --gold: #f0b440;
+      --gold-strong: #f6c45f;
+      --gold-soft: #3a3020;
+      --navy: #9fb4e6;
+      --navy-soft: #26324d;
+      --mine: #3b3220;
+      --mine-line: #c9962f;
+      --danger: #ff8a80;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 "Heebo", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+  [hidden] { display: none !important; }
+
+  /* Header */
+  .top {
+    background: #22335c;
+    color: #fff;
+    background-image: radial-gradient(ellipse at 15% -40%, rgba(240,180,64,.45), transparent 60%);
+  }
+  @media (prefers-color-scheme: dark) { .top { background-color: #1b2540; } }
+  .top .wrap { display: flex; align-items: center; gap: 10px 14px; padding-top: 16px; padding-bottom: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-inline-end: auto; }
+  .logo { width: 46px; height: 46px; flex: none; }
+  .brand h1 { margin: 0; font: 700 26px/1.1 "Frank Ruhl Libre", serif; letter-spacing: .3px; }
+  .brand p { margin: 2px 0 0; opacity: .8; font-size: 14px; }
+  .nav { display: flex; gap: 6px; flex-wrap: wrap; }
+  .nav a, .pill {
+    border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.08); color: #fff; text-decoration: none;
+    border-radius: 999px; padding: 7px 14px; font-weight: 500; font-size: 14px; white-space: nowrap;
+  }
+  .nav a:hover, .pill:hover { background: rgba(255,255,255,.16); }
+  .nav a[aria-current="page"] { background: #fff; color: #22335c; border-color: #fff; }
+  .me { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .me .pill { padding: 5px 12px; font-size: 13px; }
+
+  main.wrap { padding-top: 22px; padding-bottom: 60px; }
+  .intro { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; margin-bottom: 14px; color: var(--ink-2); }
+  .intro strong { color: var(--ink); }
+  .page-title { margin: 0 0 4px; font: 700 28px/1.2 "Frank Ruhl Libre", serif; }
+
+  /* Login */
+  .login {
+    min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+    background: #22335c radial-gradient(ellipse at 50% -10%, rgba(240,180,64,.5), transparent 60%);
+  }
+  .login-card {
+    width: min(400px, 100%); background: var(--surface); border-radius: 22px; padding: 30px 26px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.35); text-align: center;
+  }
+  .login-card .logo { width: 72px; height: 72px; margin: 0 auto 10px; display: block; }
+  .login-card h1 { margin: 0; font: 700 32px/1.1 "Frank Ruhl Libre", serif; }
+  .login-card .sub { color: var(--ink-2); margin: 4px 0 22px; }
+  .login-card form { display: flex; flex-direction: column; gap: 12px; text-align: start; }
+  .login-card input { font-size: 20px; text-align: center; letter-spacing: 1px; direction: ltr; padding: 12px; }
+  .login-card .btn { padding: 13px; font-size: 16px; }
+  .login-err { color: var(--danger); font-size: 14px; min-height: 1.4em; text-align: center; }
+  .login-foot { margin-top: 18px; font-size: 13px; }
+  .linkish { border: 0; background: none; color: var(--ink-3); text-decoration: underline; padding: 0; font-size: 13px; }
+
+  /* My bookings */
+  .mine-strip {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px 14px; margin-bottom: 18px; box-shadow: var(--shadow);
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .mine-strip h2 { font-size: 14px; margin: 0; color: var(--ink-2); font-weight: 600; }
+  .mine-chip { border: 1px solid var(--mine-line); background: var(--mine); border-radius: 10px; padding: 5px 10px; font-size: 13px; text-align: start; }
+  .mine-chip b { font-weight: 600; }
+
+  /* Week tabs */
+  .tabs { display: flex; gap: 10px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .tab {
+    flex: 1 0 200px; text-align: start; border: 1px solid var(--line); background: var(--surface);
+    border-radius: var(--radius); padding: 12px 16px; box-shadow: var(--shadow); position: relative;
+  }
+  .tab .t-kicker { font-size: 12px; color: var(--ink-3); font-weight: 500; }
+  .tab .t-title { font: 700 22px/1.2 "Frank Ruhl Libre", serif; margin: 2px 0; }
+  .tab .t-sub { font-size: 13px; color: var(--ink-2); }
+  .tab[aria-selected="true"] { border-color: var(--gold); background: linear-gradient(var(--gold-soft), var(--surface)); }
+  .tab[aria-selected="true"]::after {
+    content: ""; position: absolute; inset-inline: 16px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--gold);
+  }
+
+  /* Week grid */
+  .grid {
+    display: grid;
+    grid-template-columns: 96px repeat(var(--days), minmax(0, 1fr));
+    grid-template-rows: auto repeat(var(--lessons), minmax(84px, auto));
+    gap: 8px;
+  }
+  .lesson-col, .day { display: grid; grid-row: 1 / -1; grid-template-rows: subgrid; gap: 8px; }
+  .lesson-label {
+    display: flex; flex-direction: column; justify-content: center; padding: 0 8px;
+    color: var(--ink-2); border-inline-end: 2px solid var(--line);
+  }
+  .lesson-label strong { color: var(--ink); font-weight: 600; }
+  .lesson-label span { font-size: 12px; direction: ltr; text-align: right; }
+  .day-head { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow); }
+  .day-name { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .day-date { font-size: 13px; color: var(--ink-2); display: flex; gap: 8px; flex-wrap: wrap; }
+  .heb { color: var(--gold-strong); font-weight: 500; }
+  .badge { background: var(--gold); color: #fff; font-size: 11px; border-radius: 999px; padding: 1px 8px; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .badge { color: #1a1300; } }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .chip { font-size: 11px; background: var(--navy-soft); color: var(--navy); border-radius: 6px; padding: 1px 7px; }
+  .chip.closed { background: var(--gold-soft); color: var(--gold-strong); font-weight: 600; }
+  .day-note { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+  .is-today .day-head { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-soft), var(--shadow); }
+
+  .slot {
+    border-radius: 12px; padding: 9px 11px; min-width: 0; text-align: start; display: flex; flex-direction: column; gap: 2px;
+    border: 1px solid var(--line); background: var(--surface); position: relative;
+  }
+  .slot-label { display: none; font-size: 12px; color: var(--ink-3); font-weight: 500; }
+  .slot.free {
+    border: 1.5px dashed var(--line); background: transparent; justify-content: center; align-items: center;
+    color: var(--ink-3); transition: background .15s, border-color .15s, color .15s;
+  }
+  .slot.free:hover, .slot.free:focus-visible { border-color: var(--gold); color: var(--gold-strong); background: var(--gold-soft); outline: none; }
+  .free-cta { font-weight: 600; font-size: 14px; }
+  .slot.taken { background: var(--navy-soft); border-color: transparent; }
+  .slot.taken .who { display: flex; flex-direction: column; min-width: 0; }
+  .slot.taken strong { font-weight: 600; overflow-wrap: anywhere; }
+  .slot .cls { font-size: 13px; color: var(--ink-2); }
+  .slot .topic { font-size: 12px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .slot.mine { background: var(--mine); border-color: var(--mine-line); }
+  .slot.mine::before {
+    content: "שלי"; position: absolute; top: 6px; inset-inline-end: 8px; font-size: 10px; font-weight: 700; color: var(--gold-strong); letter-spacing: .5px;
+  }
+  .slot.empty { background: transparent; border-color: transparent; color: var(--ink-3); justify-content: center; align-items: center; }
+  .is-locked .slot.empty, .is-closed .slot.empty { background: repeating-linear-gradient(-45deg, transparent 0 8px, var(--surface-2) 8px 10px); border-color: var(--line); }
+  .is-past .slot.taken { opacity: .75; }
+  .is-past .day-head, .is-closed .day-head { opacity: .8; }
+  .slot-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+  .link-btn { border: 0; background: none; padding: 0; color: var(--danger); font-size: 12px; font-weight: 600; }
+  .link-btn.fb { color: var(--gold-strong); }
+  .link-btn:hover { text-decoration: underline; }
+
+  @media (max-width: 760px) {
+    .grid { display: flex; flex-direction: column; gap: 14px; }
+    .lesson-col { display: none; }
+    .day { display: flex; flex-direction: column; gap: 6px; }
+    .slot { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 52px; }
+    .slot-label { display: block; flex: 0 0 64px; }
+    .slot.free { justify-content: flex-start; }
+    .slot.taken .who { flex-direction: row; gap: 8px; align-items: baseline; flex: 1; }
+    .slot .topic { flex-basis: 100%; padding-inline-start: 74px; }
+    .slot.empty { justify-content: flex-start; min-height: 40px; }
+    .slot-actions { margin-inline-start: auto; }
+    .day.is-past { display: none; }
+    .tab { flex-basis: 170px; }
+  }
+
+  /* Panels, tables, admin */
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 18px; }
+  .panel h2 { margin: 0 0 4px; font: 700 22px/1.2 "Frank Ruhl Libre", serif; }
+  .panel .muted { color: var(--ink-2); margin: 0 0 14px; font-size: 14px; }
+  .admin-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .admin-tabs button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 16px; font-weight: 500; }
+  .admin-tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .row > label { flex: 1 1 160px; }
+  .head-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: start; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; color: var(--ink-3); font-weight: 600; white-space: nowrap; }
+  tr.inactive td { color: var(--ink-3); }
+  td.num { font-variant-numeric: tabular-nums; }
+  td.ltr { direction: ltr; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .actions { display: flex; gap: 12px; justify-content: flex-end; white-space: nowrap; }
+  .link { border: 0; background: none; padding: 0; color: var(--navy); font-weight: 600; font-size: 13px; }
+  .link.danger { color: var(--danger); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; }
+  .stat b { display: block; font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 13px; color: var(--ink-2); }
+  details summary { cursor: pointer; color: var(--navy); font-weight: 600; margin-top: 14px; }
+  .times { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .sugg { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-height: 340px; overflow: auto; }
+  .sugg-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: var(--surface-2); font-size: 14px; }
+  .notice { background: var(--gold-soft); border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-top: 10px; }
+
+  /* Feedback page */
+  .fb-pending { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .fb-pend-card { border: 1px dashed var(--mine-line); background: var(--mine); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .fb-pend-card .btn { align-self: flex-start; padding: 7px 14px; font-size: 14px; }
+  .fb-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+  .fb-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; scroll-margin-top: 16px; }
+  .fb-card.flash { animation: flash 1.6s ease-out; }
+  @keyframes flash { from { box-shadow: 0 0 0 4px var(--gold); } to { box-shadow: var(--shadow); } }
+  .fb-week { font: 700 15px/1.2 "Frank Ruhl Libre", serif; color: var(--gold-strong); }
+  .fb-who { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .fb-who strong { font-size: 17px; }
+  .fb-meta { font-size: 13px; color: var(--ink-2); }
+  .fb-topic { font-size: 14px; background: var(--navy-soft); color: var(--navy); border-radius: 8px; padding: 4px 10px; align-self: flex-start; }
+  .fb-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }
+  .stars { color: var(--gold); letter-spacing: 2px; font-size: 16px; }
+  .stars .off { color: var(--line); }
+  .fb-foot { display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--ink-3); }
+  .fb-foot .actions { margin-inline-start: auto; }
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 16px; }
+  .filters > * { flex: 1 1 200px; max-width: 320px; }
+  .section-title { font: 700 20px/1.2 "Frank Ruhl Libre", serif; margin: 26px 0 10px; }
+  .rate { display: flex; gap: 4px; direction: ltr; justify-content: flex-end; }
+  .rate button { border: 0; background: none; font-size: 28px; line-height: 1; padding: 0 2px; color: var(--line); }
+  .rate button.on { color: var(--gold); }
+
+  /* Forms & dialogs */
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+  input, select, textarea {
+    border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 11px; font-size: 15px; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: transparent; }
+  textarea { resize: vertical; min-height: 80px; }
+  .btn { border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 600; background: var(--surface-2); color: var(--ink); }
+  .btn.primary { background: var(--gold); color: #fff; }
+  .btn.primary:hover { background: var(--gold-strong); }
+  @media (prefers-color-scheme: dark) { .btn.primary { color: #1a1300; } }
+  .btn.danger { background: var(--danger); color: #fff; }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .btn:disabled { opacity: .55; cursor: progress; }
+  .check { flex-direction: row; align-items: center; gap: 8px; color: var(--ink); }
+  .check input { width: auto; }
+
+  dialog {
+    border: 0; border-radius: 18px; padding: 0; width: min(480px, calc(100vw - 32px));
+    background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  dialog::backdrop { background: rgba(20,26,40,.45); }
+  dialog form { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+  dialog h3 { margin: 0; font: 700 22px/1.2 "Frank Ruhl Libre", serif; }
+  .dlg-sub { margin: -8px 0 0; color: var(--ink-2); font-size: 14px; }
+  .dlg-actions { display: flex; gap: 8px; justify-content: flex-start; margin-top: 4px; flex-wrap: wrap; }
+  .dlg-actions .spacer { margin-inline-start: auto; }
+  .hint { font-size: 12px; color: var(--ink-3); font-weight: 400; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 12px; font-weight: 500;
+    opacity: 0; pointer-events: none; transition: .25s; z-index: 50; max-width: calc(100vw - 32px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--danger); color: #fff; }
+
+  .loading { padding: 60px 0; text-align: center; color: var(--ink-3); }
+  .empty-msg { color: var(--ink-3); padding: 18px 4px; }
+  .footer { color: var(--ink-3); font-size: 12px; text-align: center; margin-top: 30px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 48 48">
+    <circle cx="24" cy="24" r="23" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.35)"/>
+    <path d="M24 9c4 6 9 9.5 9 16.5a9 9 0 0 1-18 0c0-4 2-6.5 3.5-8 .3 3 1.8 4.6 3.4 5.2C21 18 22 13 24 9z" fill="#f0b440"/>
+    <path d="M24 22c2 3 4 4.5 4 7.6a4 4 0 0 1-8 0c0-2.4 1.6-4.4 4-7.6z" fill="#fff6dc"/>
+    <rect x="15" y="36" width="18" height="3" rx="1.5" fill="#c9a24a"/>
+  </symbol>
+</svg>
+
+<!-- Login -->
+<section class="login" id="loginView" hidden>
+  <div class="login-card">
+    <svg class="logo" style="background:#22335c;border-radius:50%"><use href="#logo"/></svg>
+    <h1>בית אור</h1>
+    <p class="sub">מרחב למידה · בנות מנחם</p>
+    <form id="loginForm" novalidate>
+      <label for="loginPhone">כניסה למורות – הקלידי את מספר הטלפון שלך</label>
+      <input id="loginPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="050-0000000" maxlength="16" required>
+      <button class="btn primary" id="loginBtn">כניסה</button>
+      <div class="login-err" id="loginErr" role="alert"></div>
+    </form>
+    <div class="login-foot"><button class="linkish" id="adminEntry" type="button">כניסת הנהלה</button></div>
+  </div>
+</section>
+
+<!-- App -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="wrap">
+      <div class="brand">
+        <svg class="logo"><use href="#logo"/></svg>
+        <div>
+          <h1 id="spaceName">בית אור</h1>
+          <p>מרחב למידה · <span id="schoolName">בנות מנחם</span></p>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <a href="#/">לוח שיבוצים</a>
+        <a href="#/feedback">משובים</a>
+        <a href="#/admin" id="navAdmin" hidden>ניהול</a>
+      </nav>
+      <div class="me" id="meBox"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="loading" class="loading">טוען…</div>
+    <section id="scheduleView" hidden>
+      <div class="intro" id="intro"></div>
+      <div class="mine-strip" id="mineStrip" hidden></div>
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div id="week"></div>
+    </section>
+    <section id="feedbackView" hidden></section>
+    <section id="adminView" hidden></section>
+    <p class="footer">בית אור · מרחב למידה משמעותית וחווייתית · בנות מנחם</p>
+  </main>
+</div>
+
+<!-- Booking -->
+<dialog id="bookDlg">
+  <form method="dialog" id="bookForm">
+    <h3>השתבצות לשיעור</h3>
+    <p class="dlg-sub" id="bookSummary"></p>
+    <label id="bTeacherWrap" hidden>מורה
+      <select id="bTeacher"></select>
+    </label>
+    <label>כיתה
+      <input id="bClass" required maxlength="30" list="classList" placeholder="למשל: ה׳2">
+      <datalist id="classList"></datalist>
+    </label>
+    <label>נושא / פעילות <span class="hint">(לא חובה)</span>
+      <textarea id="bTopic" maxlength="120" placeholder="למשל: סדנת חושים לפרשת נח"></textarea>
+    </label>
+    <div class="dlg-actions">
+      <button class="btn primary" id="bookSubmit" value="ok">שיבוץ</button>
+      <button class="btn" value="cancel" formnovalidate>ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Feedback -->
+<dialog id="fbDlg">
+  <form method="dialog" id="fbForm">
+    <h3>משוב על השיעור</h3>
+    <p class="dlg-sub" id="fbSummary"></p>
+    <div>
+      <div class="hint" style="margin-bottom:4px">איך היה? <span>(לא חובה)</span></div>
+      <div class="rate" id="fbRate" role="radiogroup" aria-label="דירוג"></div>
+    </div>
+    <label>המשוב שלך
+      <textarea id="fbText" rows="6" maxlength="2000" required placeholder="מה עשיתן במרחב? איך הבנות הגיבו? מה עבד במיוחד, ומה הייתן משנות? טיפ למורות אחרות…"></textarea>
+    </label>
+    <div class="dlg-actions">
+      <button class="btn primary" id="fbSubmit" value="ok">פרסום המשוב</button>
+      <button class="btn" value="cancel" formnovalidate>ביטול</button>
+      <button class="btn danger spacer" type="button" id="fbDelete" hidden>מחיקת המשוב</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Admin login -->
+<dialog id="adminDlg">
+  <form method="dialog" id="adminForm">
+    <h3>כניסת הנהלה</h3>
+    <label>קוד ניהול
+      <input id="adminCode" type="password" inputmode="numeric" autocomplete="current-password" required>
+    </label>
+    <div class="dlg-actions">
+      <button class="btn primary" value="ok">כניסה</button>
+      <button class="btn" value="cancel" formnovalidate>ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Teacher edit -->
+<dialog id="teacherDlg">
+  <form method="dialog" id="teacherForm">
+    <h3 id="teacherDlgTitle">מורה חדשה</h3>
+    <label>שם מלא
+      <input id="tName" required maxlength="40">
+    </label>
+    <label>מספר טלפון <span class="hint">(המורה נכנסת לאתר עם המספר הזה)</span>
+      <input id="tPhone" type="tel" inputmode="tel" required maxlength="16" style="direction:ltr;text-align:right">
+    </label>
+    <label class="check"><input type="checkbox" id="tActive" checked> פעילה (יכולה להיכנס ולהשתבץ)</label>
+    <div class="dlg-actions">
+      <button class="btn primary" value="ok">שמירה</button>
+      <button class="btn" value="cancel" formnovalidate>ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Confirm -->
+<dialog id="confirmDlg">
+  <form method="dialog">
+    <h3 id="confirmTitle">אישור</h3>
+    <p class="dlg-sub" id="confirmText"></p>
+    <div class="dlg-actions">
+      <button class="btn danger" value="ok" id="confirmOk">אישור</button>
+      <button class="btn" value="cancel">חזרה</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Utilities ---------- */
+  const $ = (id) => document.getElementById(id);
+  const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
+    sget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    sset(k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* ignore */ } },
+    sdel(k) { try { sessionStorage.removeItem(k); } catch (e) { /* ignore */ } },
+  };
+
+  function parseDate(s) { const p = s.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); }
+  function addDays(s, n) { const d = parseDate(s); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  function dow(s) { return parseDate(s).getUTCDay(); }
+  function fmtShort(s) { const d = parseDate(s); return d.getUTCDate() + '.' + (d.getUTCMonth() + 1); }
+  function fmtLong(s) { return 'יום ' + DAY_NAMES[dow(s)] + ' ' + fmtShort(s); }
+  function fmtPhone(p) { return p && p.length === 10 ? p.slice(0, 3) + '-' + p.slice(3) : (p || ''); }
+
+  function gematria(n) {
+    if (n === 15) return 'ט״ו';
+    if (n === 16) return 'ט״ז';
+    const tens = ['', 'י', 'כ', 'ל'][Math.floor(n / 10)] || '';
+    const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'][n % 10];
+    const s = tens + ones;
+    return s.length === 1 ? s + '׳' : s.slice(0, -1) + '״' + s.slice(-1);
+  }
+  let hebFmt = null;
+  try { hebFmt = new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', timeZone: 'UTC' }); } catch (e) { /* unsupported */ }
+  function hebDate(s) {
+    if (!hebFmt) return '';
+    try {
+      const parts = hebFmt.formatToParts(parseDate(s));
+      const day = Number((parts.find(p => p.type === 'day') || {}).value);
+      const month = (parts.find(p => p.type === 'month') || {}).value;
+      return day && month ? gematria(day) + ' ' + month : '';
+    } catch (e) { return ''; }
+  }
+
+  function h(tag, props) {
+    const el = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(k => {
+        const v = props[k];
+        if (v == null || v === false) return;
+        if (k === 'class') el.className = v;
+        else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+        else el.setAttribute(k, v === true ? '' : v);
+      });
+    }
+    for (let i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function append(el, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) c.forEach(x => append(el, x));
+    else el.append(c instanceof Node ? c : String(c));
+  }
+  function fill(el) {
+    el.replaceChildren();
+    for (let i = 1; i < arguments.length; i++) append(el, arguments[i]);
+  }
+
+  let toastTimer;
+  function toast(msg, isError) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = 'toast' + (isError ? ' error' : ''); }, isError ? 5000 : 3000);
+  }
+  function errMsg(e) { return String((e && e.message) || e || 'שגיאה'); }
+
+  function confirmBox(title, text, okLabel) {
+    return new Promise(resolve => {
+      const d = $('confirmDlg');
+      $('confirmTitle').textContent = title;
+      $('confirmText').textContent = text;
+      $('confirmOk').textContent = okLabel || 'אישור';
+      d.returnValue = '';
+      d.addEventListener('close', () => resolve(d.returnValue === 'ok'), { once: true });
+      d.showModal();
+    });
+  }
+
+  /* ---------- State & API ---------- */
+  const S = {
+    token: store.get('beitor.token') || '',
+    me: null,
+    adminCode: store.sget('beitor.admin') || '',
+    data: null,
+    index: {},
+    weekIdx: null,
+    fb: null,
+    fbFilter: { teacher: '', q: '' },
+    adminData: null,
+    adminTab: 'teachers',
+    adminFilter: { teacher: '', range: 'upcoming' },
+    suggestions: null,
+  };
+
+  function call(fn) {
+    const args = Array.prototype.slice.call(arguments, 1);
+    return fetch('api/' + fn, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auth: { token: S.token, adminCode: S.adminCode }, args: args }),
+    }).then(
+      r => r.json().catch(() => ({ ok: false, error: 'שגיאת תקשורת' })),
+      () => ({ ok: false, error: 'אין חיבור לשרת, נסי שוב' })
+    ).then(j => {
+      if (j.ok) return j.result;
+      if (j.auth) handleAuthLost();
+      throw new Error(j.error || 'שגיאה');
+    });
+  }
+
+  function handleAuthLost() {
+    S.token = ''; store.del('beitor.token');
+    S.adminCode = ''; store.sdel('beitor.admin');
+    S.data = null; S.fb = null; S.adminData = null;
+    showLogin();
+  }
+
+  function loggedIn() { return !!(S.token || S.adminCode); }
+
+  /* ---------- Login ---------- */
+  function showLogin() {
+    $('app').hidden = true;
+    $('loginView').hidden = false;
+    $('loginErr').textContent = '';
+    setTimeout(() => $('loginPhone').focus(), 50);
+  }
+
+  $('loginForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const phone = $('loginPhone').value.trim();
+    if (!phone) { $('loginErr').textContent = 'יש להקליד מספר טלפון'; return; }
+    $('loginBtn').disabled = true;
+    $('loginErr').textContent = '';
+    call('login', phone).then(r => {
+      S.token = r.token; store.set('beitor.token', r.token);
+      $('loginPhone').value = '';
+      startApp();
+    }).catch(e => { $('loginErr').textContent = errMsg(e); })
+      .finally(() => { $('loginBtn').disabled = false; });
+  });
+
+  $('adminEntry').addEventListener('click', () => { $('adminCode').value = ''; $('adminDlg').showModal(); });
+  $('adminForm').addEventListener('submit', (ev) => {
+    if (ev.submitter && ev.submitter.value !== 'ok') return;
+    ev.preventDefault();
+    const code = $('adminCode').value.trim();
+    const prev = S.adminCode;
+    S.adminCode = code;
+    call('adminLogin').then(data => {
+      store.sset('beitor.admin', code);
+      S.adminData = data;
+      $('adminDlg').close();
+      location.hash = '#/admin';
+      startApp();
+    }).catch(e => { S.adminCode = prev; toast(errMsg(e), true); });
+  });
+
+  function logout() {
+    const done = () => { handleAuthLost(); location.hash = '#/'; };
+    if (S.token) call('logout').then(done, done); else done();
+  }
+
+  /* ---------- App shell & routing ---------- */
+  function route() { return (location.hash.replace(/^#\/?/, '') || 'schedule'); }
+
+  function startApp() {
+    $('loginView').hidden = true;
+    $('app').hidden = false;
+    refresh().then(() => render());
+  }
+
+  function refresh() {
+    return call('getState').then(data => {
+      S.data = data;
+      S.me = data.me;
+      S.index = {};
+      data.bookings.forEach(b => { S.index[b.date + '|' + b.lesson] = b; });
+      $('spaceName').textContent = data.config.spaceName;
+      $('schoolName').textContent = data.config.schoolName;
+      if (route() === 'schedule') render();
+    }).catch(e => { if (loggedIn()) toast(errMsg(e), true); });
+  }
+
+  window.addEventListener('hashchange', () => { if (S.data) render(); });
+
+  function render() {
+    if (!S.data) return;
+    let r = route();
+    if (r === 'admin' && !S.adminCode) { location.hash = '#/'; return; }
+    $('loading').hidden = true;
+    $('navAdmin').hidden = !S.adminCode;
+    Array.prototype.forEach.call($('nav').querySelectorAll('a'), a => {
+      const target = a.getAttribute('href').replace(/^#\/?/, '') || 'schedule';
+      if (target === r) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    fill($('meBox'),
+      S.me ? h('span', null, 'שלום, ', h('b', null, S.me.name)) : h('span', null, 'הנהלה'),
+      h('button', { class: 'pill', type: 'button', onclick: logout }, 'יציאה'));
+    $('scheduleView').hidden = r !== 'schedule';
+    $('feedbackView').hidden = r !== 'feedback';
+    $('adminView').hidden = r !== 'admin';
+    if (r === 'schedule') renderSchedule();
+    else if (r === 'feedback') { if (S.fb) renderFeedback(); loadFeedback(); }
+    else if (r === 'admin') { if (S.adminData) renderAdmin(); else loadAdmin(); }
+  }
+
+  /* ---------- Schedule ---------- */
+  function weeksOf(w) {
+    const out = [];
+    for (let s = w.start; s <= w.last; s = addDays(s, 7)) out.push(s);
+    return out;
+  }
+  function weekTitleFrom(cal, ws) {
+    cal = cal || {};
+    const sat = addDays(ws, 6);
+    const p = (cal.parashot || {})[sat];
+    if (p) return p;
+    const hol = (cal.holidays || {})[sat];
+    if (hol && hol.length) return hol[0];
+    return 'שבוע ' + fmtShort(ws);
+  }
+  function weekTitle(ws) { return weekTitleFrom(S.data.calendar, ws); }
+  function dayStatus(date) {
+    const w = S.data.window, cfg = S.data.config;
+    if (date < w.today) return 'past';
+    if (cfg.closedDates[date]) return 'closed';
+    if (date > w.last) return 'locked';
+    return 'open';
+  }
+  function lessonById(lessons, id) {
+    return lessons.find(x => x.id === Number(id)) || { id: id, name: 'שיעור ' + id, time: '' };
+  }
+  function lessonName(id) { return lessonById(S.data.config.lessons, id).name; }
+
+  function renderSchedule() {
+    const d = S.data, w = d.window, cfg = d.config;
+    let lastDay = w.last;
+    while (cfg.schoolDays.indexOf(dow(lastDay)) < 0) lastDay = addDays(lastDay, -1);
+    const weeks = weeksOf(w);
+    if (S.weekIdx == null || S.weekIdx >= weeks.length) S.weekIdx = 0;
+
+    fill($('intro'),
+      h('span', null, 'בחרי שיעור פנוי כדי להשתבץ למרחב.'),
+      h('span', null, 'ההרשמה פתוחה עד ', h('strong', null, fmtLong(lastDay)), ' · בכל יום נפתח יום נוסף.'));
+
+    const mine = d.bookings.filter(b => b.mine && b.date >= w.today)
+      .sort((a, b) => (a.date + a.lesson).localeCompare(b.date + b.lesson));
+    $('mineStrip').hidden = !mine.length;
+    fill($('mineStrip'),
+      h('h2', null, 'השיבוצים הקרובים שלי:'),
+      mine.map(b => h('button', {
+        class: 'mine-chip', type: 'button',
+        onclick: () => { S.weekIdx = weeks.findIndex(ws => b.date >= ws && b.date < addDays(ws, 7)); renderSchedule(); },
+      }, h('b', null, fmtLong(b.date)), ' · ' + lessonName(b.lesson) + ' · ' + b.className)));
+
+    fill($('tabs'), weeks.map((ws, i) => {
+      const isThis = w.today >= ws && w.today < addDays(ws, 7);
+      const kicker = isThis ? 'השבוע' : (i === 0 ? 'השבוע הקרוב' : (i === 1 ? 'שבוע הבא' : 'בעוד שבועיים'));
+      const fri = addDays(ws, 5);
+      return h('button', {
+        class: 'tab', role: 'tab', type: 'button', 'aria-selected': String(i === S.weekIdx),
+        onclick: () => { S.weekIdx = i; renderSchedule(); },
+      },
+        h('div', { class: 't-kicker' }, kicker),
+        h('div', { class: 't-title' }, weekTitle(ws)),
+        h('div', { class: 't-sub' }, fmtShort(ws) + '–' + fmtShort(fri) + ' · ' + hebDate(ws) + ' – ' + hebDate(fri)));
+    }));
+
+    fill($('week'), renderWeek(weeks[S.weekIdx]));
+  }
+
+  function renderWeek(ws) {
+    const d = S.data, cfg = d.config, w = d.window;
+    const grid = h('div', { class: 'grid', style: '--days:' + cfg.schoolDays.length + ';--lessons:' + cfg.lessons.length });
+    grid.append(h('div', { class: 'lesson-col', 'aria-hidden': 'true' },
+      h('div', null),
+      cfg.lessons.map(l => h('div', { class: 'lesson-label' }, h('strong', null, l.name), l.time ? h('span', null, l.time) : null))));
+
+    cfg.schoolDays.forEach(dw => {
+      const date = addDays(ws, dw);
+      const st = dayStatus(date);
+      const hol = ((d.calendar || {}).holidays || {})[date] || [];
+      const closed = cfg.closedDates[date];
+      grid.append(h('section', { class: 'day is-' + st + (date === w.today ? ' is-today' : ''), 'aria-label': fmtLong(date) },
+        h('header', { class: 'day-head' },
+          h('div', { class: 'day-name' }, 'יום ' + DAY_NAMES[dw], date === w.today ? h('span', { class: 'badge' }, 'היום') : null),
+          h('div', { class: 'day-date' }, h('span', null, fmtShort(date)), h('span', { class: 'heb' }, hebDate(date))),
+          (hol.length || closed) ? h('div', { class: 'chips' },
+            closed ? h('span', { class: 'chip closed' }, closed) : null,
+            hol.filter(t => t !== closed).map(t => h('span', { class: 'chip' }, t))) : null,
+          st === 'locked' ? h('div', { class: 'day-note' }, 'ייפתח להרשמה ב־' + fmtShort(addDays(date, -cfg.daysAhead))) : null,
+          st === 'past' ? h('div', { class: 'day-note' }, 'עבר') : null,
+          st === 'closed' ? h('div', { class: 'day-note' }, 'המרחב סגור') : null),
+        cfg.lessons.map(l => renderSlot(date, l, st))));
+    });
+    return grid;
+  }
+
+  function renderSlot(date, l, st) {
+    const b = S.index[date + '|' + l.id];
+    const today = S.data.window.today;
+    const label = h('span', { class: 'slot-label' }, l.name);
+    if (b) {
+      const manage = b.mine || !!S.adminCode;
+      const canCancel = manage && date >= today;
+      const canFeedback = manage && date <= today && !b.hasFeedback;
+      return h('div', { class: 'slot taken' + (b.mine ? ' mine' : '') },
+        label,
+        h('div', { class: 'who' }, h('strong', null, b.teacher), h('span', { class: 'cls' }, b.className)),
+        b.topic ? h('div', { class: 'topic', title: b.topic }, b.topic) : null,
+        (canCancel || canFeedback || b.hasFeedback) ? h('div', { class: 'slot-actions' },
+          canFeedback ? h('button', { class: 'link-btn fb', type: 'button', onclick: () => openFeedback(b) }, '✎ כתיבת משוב') : null,
+          b.hasFeedback ? h('a', { class: 'link-btn fb', href: '#/feedback', onclick: () => { S.flashId = b.id; } }, '💬 משוב') : null,
+          canCancel ? h('button', { class: 'link-btn', type: 'button', onclick: () => askCancel(b) }, 'ביטול שיבוץ') : null) : null);
+    }
+    if (st === 'open') {
+      return h('button', {
+        class: 'slot free', type: 'button', onclick: () => openBook(date, l),
+        'aria-label': 'להשתבץ ל' + l.name + ' ב' + fmtLong(date),
+      }, label, h('span', { class: 'free-cta' }, '+ להשתבץ'));
+    }
+    return h('div', { class: 'slot empty' }, label, st === 'past' ? '—' : '');
+  }
+
+  /* ---------- Booking ---------- */
+  let pending = null;
+  function openBook(date, l) {
+    pending = { date: date, lesson: l.id };
+    $('bookSummary').textContent = fmtLong(date) + ' (' + hebDate(date) + ') · ' + l.name + (l.time ? ' ' + l.time : '') + ' · ' + weekTitle(addDays(date, -dow(date)));
+    const pickTeacher = !!S.adminCode;
+    $('bTeacherWrap').hidden = !pickTeacher;
+    $('bTeacher').required = pickTeacher;
+    if (pickTeacher) {
+      fill($('bTeacher'), h('option', { value: '' }, 'בחרי מורה…'), S.data.teachers.map(t => h('option', { value: t.id }, t.name)));
+      $('bTeacher').value = S.me ? S.me.id : '';
+    }
+    let classes = [];
+    try { classes = JSON.parse(store.get('beitor.classes') || '[]'); } catch (e) { /* ignore */ }
+    fill($('classList'), classes.map(c => h('option', { value: c })));
+    $('bClass').value = classes[0] || '';
+    $('bTopic').value = '';
+    $('bookSubmit').disabled = false;
+    $('bookDlg').showModal();
+  }
+
+  $('bookForm').addEventListener('submit', (ev) => {
+    if (ev.submitter && ev.submitter.value !== 'ok') return;
+    ev.preventDefault();
+    const className = $('bClass').value.trim();
+    const req = { date: pending.date, lesson: pending.lesson, className: className, topic: $('bTopic').value.trim() };
+    if (S.adminCode) req.teacherId = $('bTeacher').value;
+    $('bookSubmit').disabled = true;
+    call('book', req).then(() => {
+      let classes = [];
+      try { classes = JSON.parse(store.get('beitor.classes') || '[]'); } catch (e) { /* ignore */ }
+      store.set('beitor.classes', JSON.stringify([className].concat(classes.filter(c => c !== className)).slice(0, 8)));
+      $('bookDlg').close();
+      toast('השתבצת בהצלחה! נתראה בבית אור ✨');
+      return refresh();
+    }).catch(e => {
+      $('bookSubmit').disabled = false;
+      toast(errMsg(e), true);
+      if (/תפוסה/.test(errMsg(e))) { $('bookDlg').close(); refresh(); }
+    });
+  });
+
+  function askCancel(b) {
+    confirmBox('לבטל את השיבוץ?', fmtLong(b.date) + ' · ' + lessonName(b.lesson) + ' · ' + b.teacher + ' · ' + b.className, 'כן, לבטל')
+      .then(ok => {
+        if (!ok) return;
+        call('cancel', b.id).then(() => { toast('השיבוץ בוטל'); S.adminData = null; return refresh(); })
+          .catch(e => toast(errMsg(e), true));
+      });
+  }
+
+  /* ---------- Feedback ---------- */
+  let fbTarget = null, fbRating = 0;
+  function renderRate() {
+    fill($('fbRate'), [1, 2, 3, 4, 5].map(n => h('button', {
+      type: 'button', class: n <= fbRating ? 'on' : '', role: 'radio', 'aria-checked': String(n === fbRating), 'aria-label': n + ' כוכבים',
+      onclick: () => { fbRating = fbRating === n ? 0 : n; renderRate(); },
+    }, '★')));
+  }
+  function openFeedback(b) {
+    fbTarget = b;
+    const lessons = (S.fb && S.fb.lessons) || (S.data && S.data.config.lessons) || [];
+    $('fbSummary').textContent = fmtLong(b.date) + ' · ' + lessonById(lessons, b.lesson).name + ' · ' + b.className + (b.topic ? ' · ' + b.topic : '') + (S.me && b.teacher === S.me.name ? '' : ' · ' + b.teacher);
+    fbRating = (b.feedback && b.feedback.rating) || 0;
+    renderRate();
+    $('fbText').value = (b.feedback && b.feedback.text) || '';
+    $('fbDelete').hidden = !(b.feedback && b.feedback.text);
+    $('fbSubmit').disabled = false;
+    $('fbDlg').showModal();
+  }
+  function saveFeedback(text) {
+    $('fbSubmit').disabled = true;
+    return call('saveFeedback', { id: fbTarget.id, text: text, rating: fbRating }).then(data => {
+      S.fb = data;
+      $('fbDlg').close();
+      toast(text ? 'המשוב פורסם – תודה! 🙏' : 'המשוב נמחק');
+      if (text) S.flashId = fbTarget.id;
+      if (route() === 'feedback') renderFeedback();
+      refresh();
+    }).catch(e => { $('fbSubmit').disabled = false; toast(errMsg(e), true); });
+  }
+  $('fbForm').addEventListener('submit', (ev) => {
+    if (ev.submitter && ev.submitter.value !== 'ok') return;
+    ev.preventDefault();
+    const text = $('fbText').value.trim();
+    if (!text) { toast('יש לכתוב משוב', true); return; }
+    saveFeedback(text);
+  });
+  $('fbDelete').addEventListener('click', () => {
+    $('fbDlg').close();
+    confirmBox('למחוק את המשוב?', 'המשוב יוסר מדף המשובים.', 'מחיקה').then(ok => { if (ok) saveFeedback(''); else $('fbDlg').showModal(); });
+  });
+
+  function loadFeedback() {
+    return call('getFeedback').then(data => { S.fb = data; if (route() === 'feedback') renderFeedback(); })
+      .catch(e => toast(errMsg(e), true));
+  }
+
+  function stars(n) {
+    if (!n) return null;
+    return h('span', { class: 'stars', 'aria-label': n + ' מתוך 5' }, '★'.repeat(n), h('span', { class: 'off' }, '★'.repeat(5 - n)));
+  }
+
+  function renderFeedback() {
+    const F = S.fb, root = $('feedbackView');
+    const f = S.fbFilter;
+    const names = Array.from(new Set(F.feed.map(b => b.teacher))).sort((a, b) => a.localeCompare(b, 'he'));
+    const q = f.q.trim();
+    const feed = F.feed.filter(b => (!f.teacher || b.teacher === f.teacher) &&
+      (!q || [b.teacher, b.className, b.topic, b.feedback.text, weekTitleFrom(F.calendar, addDays(b.date, -dow(b.date)))].join(' ').indexOf(q) >= 0));
+    const myPending = F.pending.filter(b => b.mine || (!S.me && S.adminCode));
+
+    const teacherSel = h('select', { 'aria-label': 'סינון לפי מורה', onchange: (e) => { f.teacher = e.target.value; renderFeedback(); } },
+      h('option', { value: '' }, 'כל המורות'), names.map(n => h('option', { value: n }, n)));
+    teacherSel.value = f.teacher;
+    const search = h('input', { type: 'search', placeholder: 'חיפוש: נושא, כיתה, פרשה…', value: f.q, 'aria-label': 'חיפוש' });
+    search.addEventListener('input', () => {
+      f.q = search.value;
+      clearTimeout(search._t);
+      search._t = setTimeout(() => { renderFeedback(); const s = root.querySelector('input[type=search]'); s.focus(); s.setSelectionRange(s.value.length, s.value.length); }, 250);
+    });
+
+    fill(root,
+      h('h2', { class: 'page-title' }, 'משובים מהשיעורים בבית אור'),
+      h('p', { class: 'intro' }, 'מה עשינו במרחב, מה עבד ומה כדאי לנסות – כדי שנוכל ללמוד אחת מהשנייה.'),
+
+      myPending.length ? [
+        h('h3', { class: 'section-title' }, S.me ? 'שיעורים שלך שממתינים למשוב' : 'שיעורים שממתינים למשוב'),
+        h('div', { class: 'fb-pending' }, myPending.map(b => h('div', { class: 'fb-pend-card' },
+          h('div', null, h('b', null, fmtLong(b.date)), ' · ' + lessonById(F.lessons, b.lesson).name),
+          h('div', { class: 'fb-meta' }, (S.me ? '' : b.teacher + ' · ') + b.className + (b.topic ? ' · ' + b.topic : '')),
+          h('button', { class: 'btn primary', type: 'button', onclick: () => openFeedback(b) }, '✎ כתיבת משוב')))),
+      ] : null,
+
+      h('h3', { class: 'section-title' }, 'כל המשובים', F.feed.length ? h('span', { class: 'hint' }, '  (' + F.feed.length + ')') : null),
+      F.feed.length ? h('div', { class: 'filters' }, teacherSel, search) : null,
+      feed.length ? h('div', { class: 'fb-feed' }, feed.map(b => {
+        const fb = b.feedback;
+        const edited = fb.updatedAt && fb.createdAt && fb.updatedAt.slice(0, 16) !== fb.createdAt.slice(0, 16);
+        return h('article', { class: 'fb-card' + (S.flashId === b.id ? ' flash' : ''), id: 'fb-' + b.id },
+          h('div', { class: 'fb-week' }, weekTitleFrom(F.calendar, addDays(b.date, -dow(b.date)))),
+          h('div', { class: 'fb-who' }, h('strong', null, b.teacher), h('span', { class: 'fb-meta' }, b.className)),
+          h('div', { class: 'fb-meta' }, fmtLong(b.date) + ' · ' + hebDate(b.date) + ' · ' + lessonById(F.lessons, b.lesson).name),
+          b.topic ? h('div', { class: 'fb-topic' }, b.topic) : null,
+          stars(fb.rating),
+          h('div', { class: 'fb-text' }, fb.text),
+          h('div', { class: 'fb-foot' },
+            edited ? h('span', null, 'נערך') : null,
+            b.canEdit ? h('div', { class: 'actions' }, h('button', { class: 'link', type: 'button', onclick: () => openFeedback(b) }, 'עריכה')) : null));
+      }))
+        : h('p', { class: 'empty-msg' }, F.feed.length ? 'לא נמצאו משובים מתאימים.' : 'עדיין אין משובים. אחרי שיעור במרחב – כתבי כאן איך היה!'));
+
+    if (S.flashId) {
+      const el = $('fb-' + S.flashId);
+      S.flashId = null;
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    }
+  }
+
+  /* ---------- Admin ---------- */
+  function loadAdmin() {
+    return call('adminLogin').then(data => { S.adminData = data; if (route() === 'admin') renderAdmin(); })
+      .catch(e => toast(errMsg(e), true));
+  }
+  function adminUpdate(promise, msg) {
+    return promise.then(data => {
+      S.adminData = data;
+      renderAdmin();
+      if (msg) toast(msg);
+      refresh();
+      return data;
+    }).catch(e => { toast(errMsg(e), true); throw e; });
+  }
+
+  function renderAdmin() {
+    const A = S.adminData, root = $('adminView');
+    if (!A) { fill(root, h('div', { class: 'loading' }, 'טוען…')); return; }
+    const tabs = h('div', { class: 'admin-tabs', role: 'tablist' },
+      [['teachers', 'מורות וטלפונים'], ['settings', 'תאריכים וימי חופש'], ['bookings', 'כל השיבוצים']].map(t => h('button', {
+        type: 'button', role: 'tab', 'aria-selected': String(S.adminTab === t[0]),
+        onclick: () => { S.adminTab = t[0]; renderAdmin(); },
+      }, t[1])));
+    const body = S.adminTab === 'teachers' ? renderTeachersAdmin(A) : S.adminTab === 'settings' ? renderSettingsAdmin(A) : renderBookingsAdmin(A);
+    fill(root, tabs, body);
+  }
+
+  function renderTeachersAdmin(A) {
+    const upcoming = {}, total = {};
+    A.bookings.forEach(b => {
+      total[b.teacher] = (total[b.teacher] || 0) + 1;
+      if (b.date >= A.today) upcoming[b.teacher] = (upcoming[b.teacher] || 0) + 1;
+    });
+    const bulk = h('textarea', { rows: 6, placeholder: 'רחל כהן, 050-1234567\nמרים לוי, 052-7654321\n…', style: 'direction:rtl' });
+    const bulkResult = h('div');
+    return h('div', { class: 'panel' },
+      h('div', { class: 'head-row' },
+        h('div', null, h('h2', null, 'רשימת המורות'),
+          h('p', { class: 'muted', style: 'margin:0' }, 'כל מורה נכנסת לאתר עם מספר הטלפון שלה. מורה לא פעילה לא יכולה להיכנס.')),
+        h('button', { class: 'btn primary', type: 'button', onclick: () => editTeacher(null) }, '+ הוספת מורה')),
+      h('div', { class: 'stats' },
+        h('div', { class: 'stat' }, h('b', null, A.teachers.filter(t => t.active).length), h('span', null, 'מורות פעילות')),
+        h('div', { class: 'stat' }, h('b', null, A.bookings.filter(b => b.date >= A.today).length), h('span', null, 'שיבוצים עתידיים')),
+        h('div', { class: 'stat' }, h('b', null, A.bookings.filter(b => b.hasFeedback).length), h('span', null, 'משובים (60 יום)'))),
+      A.teachers.length ? h('div', { class: 'table-wrap' }, h('table', null,
+        h('thead', null, h('tr', null, ['שם', 'טלפון', 'סטטוס', 'שיבוצים קרובים', 'סה״כ (60 יום)', ''].map(x => h('th', null, x)))),
+        h('tbody', null, A.teachers.slice().sort((a, b) => a.name.localeCompare(b.name, 'he')).map(t => h('tr', { class: t.active ? '' : 'inactive' },
+          h('td', null, h('strong', null, t.name)),
+          h('td', { class: 'ltr' }, fmtPhone(t.phone)),
+          h('td', null, t.active ? 'פעילה' : 'לא פעילה'),
+          h('td', { class: 'num' }, upcoming[t.name] || 0),
+          h('td', { class: 'num' }, total[t.name] || 0),
+          h('td', null, h('div', { class: 'actions' },
+            h('button', { class: 'link', type: 'button', onclick: () => { S.adminTab = 'bookings'; S.adminFilter.teacher = t.name; renderAdmin(); } }, 'שיבוצים'),
+            h('button', { class: 'link', type: 'button', onclick: () => editTeacher(t) }, 'עריכה'),
+            h('button', { class: 'link danger', type: 'button', onclick: () => deleteTeacher(t) }, 'מחיקה'))))))))
+        : h('p', { class: 'empty-msg' }, 'עדיין אין מורות ברשימה. הוסיפי אחת־אחת, או הדביקי רשימה למטה.'),
+      h('details', { open: A.teachers.length ? null : true },
+        h('summary', null, 'הדבקת רשימת מורות'),
+        h('div', { style: 'display:flex;flex-direction:column;gap:10px;margin-top:10px;max-width:460px' },
+          h('label', null, 'כל מורה בשורה: שם, ואחריו מספר טלפון', bulk),
+          h('div', null, h('button', {
+            class: 'btn primary', type: 'button',
+            onclick: () => {
+              const lines = bulk.value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+              if (!lines.length) { toast('אין שורות להוספה', true); return; }
+              call('adminAddTeachers', lines).then(data => {
+                S.adminData = data;
+                renderAdmin();
+                refresh();
+                toast('נוספו ' + data.added + ' מורות');
+                if (data.errors && data.errors.length) {
+                  const panel = $('adminView').querySelector('details');
+                  panel.open = true;
+                  panel.querySelector('textarea').value = data.errors.map(x => x.split(' – ')[0]).join('\n');
+                  panel.append(h('div', { class: 'notice' }, h('b', null, 'שורות שלא נוספו:'), h('ul', null, data.errors.map(x => h('li', null, x)))));
+                }
+              }).catch(e => toast(errMsg(e), true));
+            },
+          }, 'הוספת כל הרשימה')),
+          bulkResult)));
+  }
+
+  let editingTeacher = null;
+  function editTeacher(t) {
+    editingTeacher = t;
+    $('teacherDlgTitle').textContent = t ? 'עריכת מורה' : 'מורה חדשה';
+    $('tName').value = t ? t.name : '';
+    $('tPhone').value = t ? fmtPhone(t.phone) : '';
+    $('tActive').checked = t ? t.active : true;
+    $('teacherDlg').showModal();
+  }
+  $('teacherForm').addEventListener('submit', (ev) => {
+    if (ev.submitter && ev.submitter.value !== 'ok') return;
+    ev.preventDefault();
+    const t = { id: editingTeacher ? editingTeacher.id : '', name: $('tName').value.trim(), phone: $('tPhone').value.trim(), active: $('tActive').checked };
+    adminUpdate(call('adminSaveTeacher', t), 'נשמר').then(() => $('teacherDlg').close(), () => {});
+  });
+  function deleteTeacher(t) {
+    confirmBox('למחוק את ' + t.name + '?', 'השיבוצים והמשובים שלה יישארו. אם היא רק לא מלמדת כרגע, אפשר לסמן אותה כ"לא פעילה" במקום למחוק.', 'מחיקה')
+      .then(ok => { if (ok) adminUpdate(call('adminDeleteTeacher', t.id), 'נמחקה').catch(() => {}); });
+  }
+
+  function renderSettingsAdmin(A) {
+    const st = A.settings;
+    const start = h('input', { type: 'date', value: st.startDate || '' });
+    const end = h('input', { type: 'date', value: st.endDate || '' });
+    const times = Array.from({ length: A.lessonCount }, (_, i) => h('input', {
+      value: (st.lessonTimes || [])[i] || '', placeholder: i === 0 ? 'למשל 08:00–08:45' : '', maxlength: 20, style: 'direction:ltr;text-align:right',
+    }));
+    const vFrom = h('input', { type: 'date', required: true });
+    const vTo = h('input', { type: 'date' });
+    const vName = h('input', { placeholder: 'למשל: חופשת חנוכה', maxlength: 40 });
+    vFrom.addEventListener('change', () => { if (!vTo.value || vTo.value < vFrom.value) vTo.value = vFrom.value; });
+
+    const suggBox = h('div');
+    function renderSugg() {
+      if (!S.suggestions) { fill(suggBox, h('p', { class: 'hint' }, 'טוען…')); return; }
+      const taken = d => st.vacations.some(v => d >= v.from && d <= v.to);
+      fill(suggBox, h('div', { class: 'sugg' }, S.suggestions.map(s => h('div', { class: 'sugg-row' },
+        h('span', null, h('b', null, fmtLong(s.date)), ' · ' + hebDate(s.date) + ' · ' + s.names.join(', ')),
+        taken(s.date) ? h('span', { class: 'hint' }, 'כבר חופש')
+          : h('button', { class: 'btn small', type: 'button', onclick: () => {
+            adminUpdate(call('adminAddVacation', { from: s.date, to: s.date, name: s.names[0] }), 'נוסף כיום חופש').catch(() => {});
+          } }, '+ יום חופש')))));
+    }
+
+    return h('div', null,
+      h('div', { class: 'panel' },
+        h('h2', null, 'תקופת הפעילות'),
+        h('p', { class: 'muted' }, 'המורות יכולות להשתבץ רק לימים בתוך התקופה (למשל: שנת הלימודים). אפשר להשאיר ריק – ואז אין הגבלה.'),
+        h('div', { class: 'row' }, h('label', null, 'מתאריך', start), h('label', null, 'עד תאריך', end)),
+        h('h2', { style: 'margin-top:20px;font-size:18px' }, 'שעות השיעורים'),
+        h('p', { class: 'muted' }, 'יופיעו ליד כל שיעור בלוח. לא חובה.'),
+        h('div', { class: 'times' }, times.map((inp, i) => h('label', null, 'שיעור ' + (i + 1), inp))),
+        h('div', { style: 'margin-top:14px' }, h('button', {
+          class: 'btn primary', type: 'button',
+          onclick: () => adminUpdate(call('adminSaveSettings', { startDate: start.value, endDate: end.value, lessonTimes: times.map(x => x.value.trim()) }), 'ההגדרות נשמרו').catch(() => {}),
+        }, 'שמירה'))),
+
+      h('div', { class: 'panel' },
+        h('h2', null, 'ימי חופש'),
+        h('p', { class: 'muted' }, 'בימים האלה המרחב סגור ולא ניתן להשתבץ. אפשר יום בודד או טווח של כמה ימים.'),
+        h('form', {
+          class: 'row', onsubmit: (ev) => {
+            ev.preventDefault();
+            adminUpdate(call('adminAddVacation', { from: vFrom.value, to: vTo.value || vFrom.value, name: vName.value.trim() }), 'יום החופש נוסף').catch(() => {});
+          },
+        }, h('label', null, 'מתאריך', vFrom), h('label', null, 'עד תאריך', vTo), h('label', null, 'שם', vName),
+          h('button', { class: 'btn primary', type: 'submit', style: 'flex:none' }, '+ הוספה')),
+        st.vacations.length ? h('div', { class: 'table-wrap', style: 'margin-top:14px' }, h('table', null,
+          h('thead', null, h('tr', null, ['שם', 'תאריכים', 'תאריך עברי', ''].map(x => h('th', null, x)))),
+          h('tbody', null, st.vacations.map(v => h('tr', { class: v.to < A.today ? 'inactive' : '' },
+            h('td', null, h('strong', null, v.name)),
+            h('td', null, v.from === v.to ? fmtLong(v.from) : fmtLong(v.from) + ' – ' + fmtLong(v.to)),
+            h('td', null, v.from === v.to ? hebDate(v.from) : hebDate(v.from) + ' – ' + hebDate(v.to)),
+            h('td', null, h('div', { class: 'actions' }, h('button', {
+              class: 'link danger', type: 'button',
+              onclick: () => adminUpdate(call('adminDeleteVacation', v.id), 'נמחק').catch(() => {}),
+            }, 'מחיקה'))))))))
+          : h('p', { class: 'empty-msg' }, 'לא הוגדרו ימי חופש.'),
+        h('details', {
+          ontoggle: (e) => {
+            if (!e.target.open || S.suggestions) return;
+            renderSugg();
+            call('adminHolidaySuggestions').then(list => { S.suggestions = list; renderSugg(); }).catch(err => toast(errMsg(err), true));
+          },
+        }, h('summary', null, 'הצעות מהלוח העברי (חגים וימים מיוחדים בחודשים הקרובים)'), suggBox)));
+  }
+
+  function renderBookingsAdmin(A) {
+    const F = S.adminFilter;
+    const names = Array.from(new Set(A.teachers.map(t => t.name).concat(A.bookings.map(b => b.teacher)))).sort((a, b) => a.localeCompare(b, 'he'));
+    const rows = A.bookings.filter(b => (!F.teacher || b.teacher === F.teacher) && (F.range === 'all' || b.date >= A.today));
+    const teacherSel = h('select', { onchange: (e) => { F.teacher = e.target.value; renderAdmin(); } },
+      h('option', { value: '' }, 'כל המורות'), names.map(n => h('option', { value: n }, n)));
+    teacherSel.value = F.teacher;
+    const rangeSel = h('select', { onchange: (e) => { F.range = e.target.value; renderAdmin(); } },
+      h('option', { value: 'upcoming' }, 'מהיום והלאה'), h('option', { value: 'all' }, 'כולל 60 הימים האחרונים'));
+    rangeSel.value = F.range;
+    const lessons = (S.data && S.data.config.lessons) || [];
+
+    return h('div', { class: 'panel' },
+      h('h2', null, 'כל השיבוצים'),
+      h('p', { class: 'muted' }, 'כמנהלת אפשר לבטל כל שיבוץ, וגם לשבץ מורה מתוך הלוח עצמו.'),
+      h('div', { class: 'row', style: 'margin-bottom:12px' }, h('label', null, 'מורה', teacherSel), h('label', null, 'טווח', rangeSel)),
+      rows.length ? h('div', { class: 'table-wrap' }, h('table', null,
+        h('thead', null, h('tr', null, ['תאריך', 'שיעור', 'מורה', 'כיתה', 'נושא', 'משוב', ''].map(x => h('th', null, x)))),
+        h('tbody', null, rows.map(b => h('tr', null,
+          h('td', { style: 'white-space:nowrap' }, fmtLong(b.date), h('div', { class: 'hint' }, hebDate(b.date))),
+          h('td', null, lessonById(lessons, b.lesson).name),
+          h('td', null, b.teacher),
+          h('td', null, b.className),
+          h('td', null, b.topic || h('span', { class: 'hint' }, '—')),
+          h('td', null, b.hasFeedback ? '✓' : h('span', { class: 'hint' }, '—')),
+          h('td', null, b.date >= A.today ? h('div', { class: 'actions' }, h('button', {
+            class: 'link danger', type: 'button',
+            onclick: () => confirmBox('לבטל את השיבוץ?', b.teacher + ' · ' + fmtLong(b.date) + ' · ' + lessonById(lessons, b.lesson).name, 'כן, לבטל')
+              .then(ok => { if (ok) adminUpdate(call('adminCancel', b.id), 'השיבוץ בוטל').catch(() => {}); }),
+          }, 'ביטול')) : null))))))
+        : h('p', { class: 'empty-msg' }, 'אין שיבוצים להצגה.'));
+  }
+
+  /* ---------- Start ---------- */
+  if (loggedIn()) startApp(); else showLogin();
+  setInterval(() => {
+    if (document.visibilityState === 'visible' && loggedIn() && route() === 'schedule' && !document.querySelector('dialog[open]')) refresh();
+  }, 60000);
+})();
+</script>
+</body>
+</html>
