@@ -111,7 +111,7 @@ function maxLessons() { return Math.max.apply(null, Object.values(lessonsPerDay(
 
 function lessons(count) {
   const times = db.settings.lessonTimes || [];
-  return Array.from({ length: count || maxLessons() }, (_, i) => ({ id: i + 1, name: 'שיעור ' + (i + 1), time: times[i] || '' }));
+  return Array.from({ length: count || maxLessons() }, (_, i) => ({ id: i + 1, name: 'שעה ' + (i + 1), time: times[i] || '' }));
 }
 
 /** Why a day is closed ('' if open): vacation name, or outside the active period. */
@@ -278,14 +278,14 @@ function promoteWaitlist(date, lesson) {
     if (!t || !t.active) continue;
     const limit = weeklyLimitOf(t);
     if (limit && countInWeek(t.id, date) >= limit) {
-      notify(t.id, 'התפנה ' + 'שיעור ' + lesson + ' ב־' + shortDate(date) + ' שחיכית לו, אבל הגעת למכסה השבועית ולכן הוא עבר הלאה.');
+      notify(t.id, 'התפנתה שעה ' + lesson + ' ב־' + shortDate(date) + ' שחיכית לו, אבל הגעת למכסה השבועית ולכן הוא עבר הלאה.');
       continue;
     }
     db.bookings.push({
       id: crypto.randomUUID(), date, lesson, teacherId: t.id, teacher: t.name,
       className: entry.className, topic: entry.topic, createdAt: new Date().toISOString(), fromWaitlist: true,
     });
-    notify(t.id, 'התפנה השיעור שחיכית לו ושובצת אליו אוטומטית: ' + 'שיעור ' + lesson + ', ' + shortDate(date) + ' (' + entry.className + '). אם הוא כבר לא מתאים לך – אפשר לבטל בלוח.');
+    notify(t.id, 'התפנה השיעור שחיכית לו ושובצת אליו אוטומטית: ' + 'שעה ' + lesson + ', ' + shortDate(date) + ' (' + entry.className + '). אם הוא כבר לא מתאים לך – אפשר לבטל בלוח.');
     return;
   }
 }
@@ -424,8 +424,8 @@ const api = {
     const className = clean(req.className, 30);
     const topic = clean(req.topic, 120);
     if (!className) fail('יש למלא כיתה');
-    if (!(lesson >= 1 && lesson <= CONFIG.MAX_LESSONS)) fail('שיעור לא תקין');
-    if (date && DATE_RE.test(date) && lesson > lessonsOnDay(date)) fail('ביום הזה יש רק ' + lessonsOnDay(date) + ' שיעורים');
+    if (!(lesson >= 1 && lesson <= CONFIG.MAX_LESSONS)) fail('שעה לא תקינה');
+    if (date && DATE_RE.test(date) && lesson > lessonsOnDay(date)) fail('ביום הזה יש רק ' + lessonsOnDay(date) + ' שעות');
     if (!isBookable(date, windowNow())) fail('לא ניתן להשתבץ בתאריך זה');
     // No await between the check and the write, so concurrent requests cannot double-book.
     const taken = db.bookings.find(b => b.date === date && b.lesson === lesson);
@@ -633,7 +633,7 @@ const api = {
     const max = lessonsOnDay(date);
     const lessonsList = Array.from(new Set((Array.isArray(req.lessons) ? req.lessons : []).map(Number)))
       .filter(n => Number.isInteger(n) && n >= 1 && n <= max).sort((a, b) => a - b);
-    if (!lessonsList.length) fail('יש לבחור לפחות שיעור אחד');
+    if (!lessonsList.length) fail('יש לבחור לפחות שעה אחת');
     const name = clean(req.name, 40);
     const existing = db.settings.blockedSlots.find(b => b.date === date);
     if (existing) {
@@ -693,7 +693,7 @@ const api = {
     const created = [], skipped = [];
     let d = addDays(from, (weekday - dow(from) + 7) % 7);
     for (; d <= to; d = addDays(d, 7)) {
-      const reason = closedReason(d) || (lesson > lessonsOnDay(d) ? 'אין שיעור ' + lesson + ' ביום הזה' : '') || slotBlocked(d, lesson);
+      const reason = closedReason(d) || (lesson > lessonsOnDay(d) ? 'אין שעה ' + lesson + ' ביום הזה' : '') || slotBlocked(d, lesson);
       const taken = db.bookings.find(b => b.date === d && b.lesson === lesson);
       if (reason) { skipped.push({ date: d, reason }); continue; }
       if (taken) { skipped.push({ date: d, reason: 'תפוס – ' + taken.teacher }); continue; }

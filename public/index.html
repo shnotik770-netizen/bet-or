@@ -853,7 +853,7 @@
     return 'open';
   }
   function lessonById(lessons, id) {
-    return lessons.find(x => x.id === Number(id)) || { id: id, name: 'שיעור ' + id, time: '' };
+    return lessons.find(x => x.id === Number(id)) || { id: id, name: 'שעה ' + id, time: '' };
   }
   function lessonName(id) { return lessonById(S.data.config.lessons, id).name; }
 
@@ -1280,11 +1280,11 @@
     const SECTIONS = [
       { key: 'period', title: 'תקופת הפעילות', c: 'petrol',
         sum: st.startDate || st.endDate ? (st.startDate ? fmtShortHeb(st.startDate) : '…') + ' – ' + (st.endDate ? fmtShortHeb(st.endDate) : '…') : 'ללא הגבלה', render: periodSection },
-      { key: 'perday', title: 'שיעורים בכל יום', c: 'powder', sum: perDaySummary, render: perDaySection },
-      { key: 'times', title: 'שעות השיעורים', c: 'sage', sum: timesSet ? 'הוגדרו ' + timesSet + ' שעות' : 'לא הוגדרו', render: timesSection },
+      { key: 'perday', title: 'שעות בכל יום', c: 'powder', sum: perDaySummary, render: perDaySection },
+      { key: 'times', title: 'זמני השעות', c: 'sage', sum: timesSet ? 'הוגדרו ' + timesSet + ' שעות' : 'לא הוגדרו', render: timesSection },
       { key: 'ahead', title: 'הרשמה מראש', c: 'cream', sum: (st.daysAhead || A.defaultDaysAhead) + ' ימים קדימה', render: aheadSection },
       { key: 'limit', title: 'מגבלת שעות שבועית', c: 'slate', sum: st.weeklyLimit ? st.weeklyLimit + ' שעות לכל מורה' : 'ללא הגבלה', render: limitSection },
-      { key: 'blocks', title: 'חסימת שיעורים ביום', c: 'rose', sum: upcomingBlocks ? (upcomingBlocks === 1 ? 'יום אחד עם חסימות' : upcomingBlocks + ' ימים עם חסימות') : 'אין חסימות', render: () => renderBlocksPanel(A) },
+      { key: 'blocks', title: 'חסימת שעות ביום', c: 'rose', sum: upcomingBlocks ? (upcomingBlocks === 1 ? 'יום אחד עם חסימות' : upcomingBlocks + ' ימים עם חסימות') : 'אין חסימות', render: () => renderBlocksPanel(A) },
       { key: 'vacations', title: 'ימי חופש', c: 'olive', sum: upcomingVac ? (upcomingVac === 1 ? 'חופשה קרובה אחת' : upcomingVac + ' חופשות קרובות') : 'לא הוגדרו', render: vacationsSection },
     ];
     const open = SECTIONS.find(x => x.key === S.settingsOpen);
@@ -1316,18 +1316,18 @@
       const inputs = [0, 1, 2, 3, 4, 5].map(d => h('input', {
         type: 'number', min: 0, max: A.maxLessons, step: 1, inputmode: 'numeric', value: A.lessonsByDay[d], 'data-day': d,
       }));
-      return section('מספר השיעורים בכל יום', 'השינוי חל רק על שיבוצים חדשים. שיבוצים שכבר נעשו נשארים במקומם ומופיעים בלוח. 0 = אין שיעורים ביום הזה.',
+      return section('מספר השעות בכל יום', 'השינוי חל רק על שיבוצים חדשים. שיבוצים שכבר נעשו נשארים במקומם ומופיעים בלוח. 0 = אין שעות ביום הזה.',
         h('div', { class: 'times' }, inputs.map((inp, d) => h('label', null, 'יום ' + DAY_NAMES[d], inp))),
-        () => save({ lessonsPerDay: inputs.reduce((o, inp, d) => { o[d] = inp.value.trim() === '' ? 0 : Number(inp.value); return o; }, {}) }, 'מספר השיעורים נשמר'));
+        () => save({ lessonsPerDay: inputs.reduce((o, inp, d) => { o[d] = inp.value.trim() === '' ? 0 : Number(inp.value); return o; }, {}) }, 'מספר השעות נשמר'));
     }
 
     function timesSection() {
       const times = Array.from({ length: A.lessonCount }, (_, i) => h('input', {
         value: (st.lessonTimes || [])[i] || '', placeholder: i === 0 ? 'למשל 08:00–08:45' : '', maxlength: 20, style: 'direction:ltr;text-align:right',
       }));
-      return section('שעות השיעורים', 'יופיעו ליד כל שיעור בלוח. לא חובה.',
-        h('div', { class: 'times' }, times.map((inp, i) => h('label', null, 'שיעור ' + (i + 1), inp))),
-        () => save({ lessonTimes: Array.from({ length: A.maxLessons }, (_, i) => (times[i] ? times[i].value.trim() : (st.lessonTimes || [])[i] || '')) }, 'שעות השיעורים נשמרו'));
+      return section('זמני השעות', 'מתי מתחילה ומסתיימת כל שעה. יופיעו בלוח. לא חובה.',
+        h('div', { class: 'times' }, times.map((inp, i) => h('label', null, 'שעה ' + (i + 1), inp))),
+        () => save({ lessonTimes: Array.from({ length: A.maxLessons }, (_, i) => (times[i] ? times[i].value.trim() : (st.lessonTimes || [])[i] || '')) }, 'זמני השעות נשמרו'));
     }
 
     function aheadSection() {
@@ -1339,7 +1339,7 @@
 
     function limitSection() {
       const wl = h('input', { type: 'number', min: 0, max: 30, step: 1, inputmode: 'numeric', value: st.weeklyLimit || '', placeholder: 'ללא הגבלה', style: 'max-width:160px' });
-      return section('מגבלת שעות שבועית', 'כמה שיעורים כל מורה יכולה לשבץ בכל שבוע. ריק = ללא הגבלה. אפשר לקבוע מגבלה אחרת למורה מסוימת ברשימת המורות (עריכה). ההנהלה יכולה לשבץ גם מעבר למגבלה.',
+      return section('מגבלת שעות שבועית', 'כמה שעות כל מורה יכולה להשתבץ בכל שבוע. ריק = ללא הגבלה. אפשר לקבוע מגבלה אחרת למורה מסוימת ברשימת המורות (עריכה). ההנהלה יכולה לשבץ גם מעבר למגבלה.',
         h('label', { style: 'max-width:220px' }, 'שעות בשבוע לכל מורה', wl),
         () => save({ weeklyLimit: wl.value.trim() }, 'המגבלה נשמרה'));
     }
@@ -1395,31 +1395,31 @@
     const reason = h('input', { placeholder: 'למשל: אירוע בית ספרי', maxlength: 40 });
     const lessonTimes = st.lessonTimes || [];
     const boxes = Array.from({ length: A.lessonCount }, (_, i) => h('input', { type: 'checkbox', value: i + 1 }));
-    const picks = h('div', { class: 'lesson-picks' }, boxes.map((b, i) => h('label', null, b, 'שיעור ' + (i + 1), lessonTimes[i] ? h('span', { class: 'hint' }, lessonTimes[i]) : null)));
+    const picks = h('div', { class: 'lesson-picks' }, boxes.map((b, i) => h('label', null, b, 'שעה ' + (i + 1), lessonTimes[i] ? h('span', { class: 'hint' }, lessonTimes[i]) : null)));
     date.addEventListener('change', () => {
       const perDay = date.value ? A.lessonsByDay[dow(date.value)] : null;
       const max = perDay != null ? perDay : A.lessonCount;
       boxes.forEach((b, i) => { const off = i + 1 > max; b.parentNode.classList.toggle('off', off); if (off) b.checked = false; });
     });
-    const lessonList = ls => ls.length > 1 && ls[ls.length - 1] - ls[0] === ls.length - 1 ? 'שיעורים ' + ls[0] + '–' + ls[ls.length - 1] : (ls.length > 1 ? 'שיעורים ' : 'שיעור ') + ls.join(', ');
+    const lessonList = ls => ls.length > 1 && ls[ls.length - 1] - ls[0] === ls.length - 1 ? 'שעות ' + ls[0] + '–' + ls[ls.length - 1] : (ls.length > 1 ? 'שעות ' : 'שעה ') + ls.join(', ');
     const upcoming = st.blockedSlots.filter(b => b.date >= A.today);
     return h('div', { class: 'panel set-panel' },
-      h('h2', null, 'חסימת שיעורים ביום מסוים'),
-      h('p', { class: 'muted' }, 'בוחרים יום ושיעורים שבהם המרחב לא זמין (למשל אירוע או מבחן). המשבצות יופיעו כ"לא זמין" ולא יהיה אפשר להשתבץ אליהן. כהנהלה אפשר לשבץ בהן בכל זאת.'),
+      h('h2', null, 'חסימת שעות ביום מסוים'),
+      h('p', { class: 'muted' }, 'בוחרים יום ושעות שבהן המרחב לא זמין (למשל אירוע או מבחן). המשבצות יופיעו כ"לא זמין" ולא יהיה אפשר להשתבץ אליהן. כהנהלה אפשר לשבץ בהן בכל זאת.'),
       h('form', {
         style: 'display:flex;flex-direction:column;gap:10px',
         onsubmit: (ev) => {
           ev.preventDefault();
           const lessons = boxes.filter(b => b.checked).map(b => Number(b.value));
-          if (!lessons.length) { toast('יש לבחור לפחות שיעור אחד', true); return; }
-          adminUpdate(call('adminAddBlock', { date: date.value, lessons: lessons, name: reason.value.trim() }), 'השיעורים נחסמו').catch(() => {});
+          if (!lessons.length) { toast('יש לבחור לפחות שעה אחת', true); return; }
+          adminUpdate(call('adminAddBlock', { date: date.value, lessons: lessons, name: reason.value.trim() }), 'השעות נחסמו').catch(() => {});
         },
       },
         h('div', { class: 'row' }, h('label', null, 'תאריך', date), h('label', null, 'סיבה (לא חובה)', reason)),
         picks,
         h('div', null, h('button', { class: 'btn primary', type: 'submit' }, '+ חסימה'))),
       upcoming.length ? h('div', { class: 'table-wrap', style: 'margin-top:14px' }, h('table', null,
-        h('thead', null, h('tr', null, ['תאריך', 'שיעורים', 'סיבה', ''].map(x => h('th', null, x)))),
+        h('thead', null, h('tr', null, ['תאריך', 'שעות', 'סיבה', ''].map(x => h('th', null, x)))),
         h('tbody', null, upcoming.map(b => h('tr', null,
           h('td', null, dateEl(b.date)),
           h('td', null, lessonList(b.lessons)),
@@ -1438,7 +1438,7 @@
     const lessonSel = h('select', { required: true });
     function syncLessons() {
       const n = A.lessonsByDay[daySel.value] || A.lessonCount, cur = lessonSel.value;
-      fill(lessonSel, Array.from({ length: n }, (_, i) => h('option', { value: i + 1 }, 'שיעור ' + (i + 1) + ((A.settings.lessonTimes || [])[i] ? ' · ' + A.settings.lessonTimes[i] : ''))));
+      fill(lessonSel, Array.from({ length: n }, (_, i) => h('option', { value: i + 1 }, 'שעה ' + (i + 1) + ((A.settings.lessonTimes || [])[i] ? ' · ' + A.settings.lessonTimes[i] : ''))));
       if (cur && Number(cur) <= n) lessonSel.value = cur;
     }
     daySel.addEventListener('change', syncLessons);
@@ -1449,7 +1449,7 @@
     const to = h('input', { type: 'date', required: true, value: A.settings.endDate || '' });
     const result = S.seriesResult;
     S.seriesResult = null;
-    const lessonsLabel = x => 'יום ' + DAY_NAMES[x.weekday] + ' · שיעור ' + x.lesson;
+    const lessonsLabel = x => 'יום ' + DAY_NAMES[x.weekday] + ' · שעה ' + x.lesson;
 
     return h('div', null,
       h('div', { class: 'panel set-panel' },
@@ -1464,7 +1464,7 @@
               .catch(e => toast(errMsg(e), true));
           },
         },
-          h('label', null, 'מורה', teacherSel), h('label', null, 'יום בשבוע', daySel), h('label', null, 'שיעור', lessonSel),
+          h('label', null, 'מורה', teacherSel), h('label', null, 'יום בשבוע', daySel), h('label', null, 'שעה', lessonSel),
           h('label', null, 'כיתה', cls), h('label', null, 'נושא', topic),
           h('label', null, 'מתאריך', from), h('label', null, 'עד תאריך', to),
           h('div', null, h('button', { class: 'btn primary', type: 'submit' }, '+ יצירת שיבוץ קבוע'))),
@@ -1563,7 +1563,7 @@
       h('p', { class: 'muted' }, 'כמנהלת אפשר לבטל כל שיבוץ, וגם לשבץ מורה מתוך הלוח עצמו.'),
       h('div', { class: 'row', style: 'margin-bottom:12px' }, h('label', null, 'מורה', teacherSel), h('label', null, 'טווח', rangeSel)),
       rows.length ? h('div', { class: 'table-wrap' }, h('table', null,
-        h('thead', null, h('tr', null, ['תאריך', 'שיעור', 'מורה', 'כיתה', 'נושא', 'משוב', ''].map(x => h('th', null, x)))),
+        h('thead', null, h('tr', null, ['תאריך', 'שעה', 'מורה', 'כיתה', 'נושא', 'משוב', ''].map(x => h('th', null, x)))),
         h('tbody', null, rows.map(b => h('tr', null,
           h('td', { style: 'white-space:nowrap' }, dateEl(b.date)),
           h('td', null, lessonById(lessons, b.lesson).name),
