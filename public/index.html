@@ -323,6 +323,21 @@
     .is-past .slot.taken, .is-past .day-head, .is-closed .day-head { opacity: 1; }
   }
 
+  .fb-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: -6px; }
+  .fb-tools .hint { flex-basis: 100%; }
+  .ai-btn { background: color-mix(in srgb, var(--c-powder) 30%, var(--surface)); color: var(--ink); }
+  #fbMic.rec { background: var(--danger); color: #fff; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity: .7; } }
+  .ai-box { background: color-mix(in srgb, var(--c-powder) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--c-powder) 45%, var(--surface)); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .ai-box p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .ai-box textarea { min-height: 52px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag { border: 0; font-size: 12px; border-radius: 999px; padding: 2px 10px; cursor: pointer; background: color-mix(in srgb, var(--c-sage) 28%, var(--surface)); color: var(--ink); }
+  .tag.aid { background: var(--wood-soft); }
+  .tag.topic { background: color-mix(in srgb, var(--c-powder) 28%, var(--surface)); }
+  .tag:hover { filter: brightness(.95); }
+  .tag-filter { display: inline-flex; gap: 6px; align-items: center; background: var(--blush-soft); border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 13px; }
+  .tag-filter button { border: 0; background: none; font-size: 15px; line-height: 1; padding: 0 4px; color: var(--ink-2); }
   .set-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-bottom: 16px; }
   .set-tile {
     display: flex; flex-direction: column; gap: 4px; text-align: start; padding: 14px 16px; border-radius: 18px;
@@ -386,7 +401,7 @@
   .check input { width: auto; accent-color: var(--teal); }
 
   dialog {
-    border: 0; border-radius: 26px; padding: 0; width: min(480px, calc(100vw - 32px));
+    border: 0; border-radius: 26px; padding: 0; width: min(520px, calc(100vw - 32px));
     background: var(--surface); color: var(--ink); box-shadow: 0 24px 70px rgba(60,20,20,.3); border-top: 8px solid var(--blush);
   }
   dialog::backdrop { background: rgba(60,30,30,.4); }
@@ -525,6 +540,13 @@
     <label>המשוב שלך
       <textarea id="fbText" rows="6" maxlength="2000" required placeholder="מה עשיתן במרחב? איך הבנות הגיבו? מה עבד במיוחד, ומה הייתן משנות? טיפ למורות אחרות…"></textarea>
     </label>
+    <div class="fb-tools">
+      <button type="button" class="btn small" id="fbMic" hidden>🎤 הקלטה</button>
+      <button type="button" class="btn small ai-btn" id="fbAi" hidden>✨ עזרה בניסוח</button>
+      <button type="button" class="linkish" id="fbUndo" hidden>חזרה לטיוטה שלי</button>
+      <span class="hint" id="fbMicHint"></span>
+    </div>
+    <div class="ai-box" id="fbAiBox" hidden></div>
     <div class="dlg-actions">
       <button class="btn primary" id="fbSubmit" value="ok">פרסום המשוב</button>
       <button class="btn" value="cancel" formnovalidate>ביטול</button>
@@ -698,7 +720,7 @@
     index: {},
     weekIdx: null,
     fb: null,
-    fbFilter: { teacher: '', q: '' },
+    fbFilter: { teacher: '', q: '', tag: '' },
     adminData: null,
     adminTab: 'teachers',
     settingsOpen: null,
@@ -1063,8 +1085,104 @@
     $('fbText').value = (b.feedback && b.feedback.text) || '';
     $('fbDelete').hidden = !(b.feedback && b.feedback.text);
     $('fbSubmit').disabled = false;
+    resetFbTools();
     $('fbDlg').showModal();
   }
+
+  /* ----- Voice dictation (browser speech recognition, Hebrew) ----- */
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, fbPrevDraft = null, aiQuestions = [];
+  function aiOn() { return !!((S.fb && S.fb.ai) || (S.data && S.data.config.ai) || (S.adminData && S.adminData.ai)); }
+  function resetFbTools() {
+    stopRec();
+    $('fbMic').hidden = !SpeechRec;
+    $('fbMicHint').textContent = SpeechRec ? '' : 'אפשר להכתיב בקול: לחצי על המיקרופון במקלדת של הטלפון.';
+    $('fbAi').hidden = !aiOn();
+    $('fbAi').disabled = false;
+    $('fbAi').textContent = '✨ עזרה בניסוח';
+    $('fbUndo').hidden = true;
+    $('fbAiBox').hidden = true;
+    fbPrevDraft = null; aiQuestions = [];
+  }
+  function stopRec() {
+    if (rec) { try { rec.stop(); } catch (e) { /* ignore */ } }
+  }
+  $('fbMic').addEventListener('click', () => {
+    if (rec) { stopRec(); return; }
+    const ta = $('fbText');
+    let base = ta.value.trim();
+    rec = new SpeechRec();
+    rec.lang = 'he-IL';
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.onresult = (ev) => {
+      let interim = '';
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) base = (base ? base + ' ' : '') + t.trim();
+        else interim += t;
+      }
+      ta.value = base + (interim ? ' ' + interim : '');
+    };
+    rec.onerror = (ev) => {
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') toast('אין הרשאה למיקרופון. אפשר לאשר בהגדרות הדפדפן', true);
+      else if (ev.error !== 'no-speech' && ev.error !== 'aborted') toast('ההקלטה נעצרה, נסי שוב', true);
+    };
+    rec.onend = () => { ta.value = base; rec = null; $('fbMic').classList.remove('rec'); $('fbMic').textContent = '🎤 הקלטה'; };
+    try {
+      rec.start();
+      $('fbMic').classList.add('rec');
+      $('fbMic').textContent = '⏹ עצירה';
+      $('fbMicHint').textContent = 'מדברים בחופשיות – מה עשיתן, מה עבד, מה הייתן משנות. אחר כך אפשר ללחוץ "עזרה בניסוח".';
+    } catch (e) { rec = null; toast('לא ניתן להתחיל הקלטה', true); }
+  });
+  $('fbDlg').addEventListener('close', stopRec);
+
+  /* ----- AI help: follow-up questions, then a composed draft ----- */
+  function aiBusy(on, label) {
+    $('fbAi').disabled = on;
+    $('fbAi').textContent = on ? '✨ ' + (label || 'חושבת…') : '✨ עזרה בניסוח';
+    const go = document.getElementById('aiCompose');
+    if (go) go.disabled = on;
+  }
+  $('fbAi').addEventListener('click', () => {
+    stopRec();
+    const draft = $('fbText').value.trim();
+    if (!draft) { toast('כתבי או הקליטי כמה מילים על השיעור, ואז אעזור להשלים', true); return; }
+    aiBusy(true);
+    call('feedbackAssist', { id: fbTarget.id, step: 'questions', draft: draft }).then(r => {
+      aiBusy(false);
+      aiQuestions = r.questions || [];
+      if (!aiQuestions.length) return compose();
+      const inputs = aiQuestions.map(() => h('textarea', { rows: 2, maxlength: 1000 }));
+      fill($('fbAiBox'),
+        h('p', null, 'כדי שהמשוב יעזור למורות אחרות – עוד ' + (aiQuestions.length === 1 ? 'שאלה קטנה' : 'שתי שאלות קטנות') + ' (אפשר לדלג):'),
+        aiQuestions.map((q, i) => h('label', null, q, inputs[i])),
+        h('div', { class: 'dlg-actions' },
+          h('button', { class: 'btn primary small', type: 'button', id: 'aiCompose', onclick: () => compose(inputs.map((inp, i) => ({ q: aiQuestions[i], a: inp.value.trim() }))) }, '✨ סידור המשוב'),
+          h('button', { class: 'btn small', type: 'button', onclick: () => compose([]) }, 'דלגי וסדרי')));
+      $('fbAiBox').hidden = false;
+      inputs[0].focus();
+    }).catch(e => { aiBusy(false); toast(errMsg(e), true); });
+  });
+  function compose(answers) {
+    const draft = $('fbText').value.trim();
+    aiBusy(true, 'מנסחת…');
+    return call('feedbackAssist', { id: fbTarget.id, step: 'compose', draft: draft, answers: answers || [] }).then(r => {
+      aiBusy(false);
+      fbPrevDraft = draft;
+      $('fbText').value = r.text;
+      $('fbAiBox').hidden = true;
+      $('fbUndo').hidden = false;
+      toast('הנה הנוסח – אפשר לערוך לפני הפרסום');
+    }).catch(e => { aiBusy(false); toast(errMsg(e), true); });
+  }
+  $('fbUndo').addEventListener('click', () => {
+    if (fbPrevDraft == null) return;
+    $('fbText').value = fbPrevDraft;
+    fbPrevDraft = null;
+    $('fbUndo').hidden = true;
+  });
   function saveFeedback(text) {
     $('fbSubmit').disabled = true;
     return call('saveFeedback', { id: fbTarget.id, text: text, rating: fbRating }).then(data => {
@@ -1094,6 +1212,12 @@
       .catch(e => toast(errMsg(e), true));
   }
 
+  /** Feedback text with the AI section headings ("מה עשינו:" …) in bold. */
+  function fbTextNodes(text) {
+    return text.split('\n').map((line, i) => [i ? '\n' : '',
+      /^(מה עשינו|מה עבד|מה כדאי לשפר|טיפ למורות):\s*$/.test(line.trim()) ? h('b', null, line) : line]);
+  }
+
   function stars(n) {
     if (!n) return null;
     return h('span', { class: 'stars', 'aria-label': n + ' מתוך 5' }, '★'.repeat(n), h('span', { class: 'off' }, '★'.repeat(5 - n)));
@@ -1104,8 +1228,10 @@
     const f = S.fbFilter;
     const names = Array.from(new Set(F.feed.map(b => b.teacher))).sort((a, b) => a.localeCompare(b, 'he'));
     const q = f.q.trim();
-    const feed = F.feed.filter(b => (!f.teacher || b.teacher === f.teacher) &&
-      (!q || [b.teacher, b.className, b.topic, b.feedback.text, weekTitleFrom(F.calendar, addDays(b.date, -dow(b.date)))].join(' ').indexOf(q) >= 0));
+    const tagsOf = b => { const t = b.feedback.tags || {}; return [].concat(t.activityTypes || [], t.aids || [], t.topics || []); };
+    const feed = F.feed.filter(b => (!f.teacher || b.teacher === f.teacher) && (!f.tag || tagsOf(b).indexOf(f.tag) >= 0) &&
+      (!q || [b.teacher, b.className, b.topic, b.feedback.text, weekTitleFrom(F.calendar, addDays(b.date, -dow(b.date)))].concat(tagsOf(b)).join(' ').indexOf(q) >= 0));
+    const tagBtn = (t, cls) => h('button', { type: 'button', class: 'tag' + (cls ? ' ' + cls : ''), title: 'הצגת כל המשובים עם "' + t + '"', onclick: () => { f.tag = t; renderFeedback(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, t);
     const myPending = F.pending.filter(b => b.mine || (!S.me && S.adminCode));
 
     const teacherSel = h('select', { 'aria-label': 'סינון לפי מורה', onchange: (e) => { f.teacher = e.target.value; renderFeedback(); } },
@@ -1132,6 +1258,8 @@
 
       h('h3', { class: 'section-title' }, 'כל המשובים', F.feed.length ? h('span', { class: 'hint' }, '  (' + F.feed.length + ')') : null),
       F.feed.length ? h('div', { class: 'filters' }, teacherSel, search) : null,
+      f.tag ? h('div', { style: 'margin:-6px 0 14px' }, h('span', { class: 'tag-filter' }, 'מסונן לפי: ', h('b', null, f.tag),
+        h('button', { type: 'button', 'aria-label': 'ביטול הסינון', onclick: () => { f.tag = ''; renderFeedback(); } }, '×'))) : null,
       feed.length ? h('div', { class: 'fb-feed' }, feed.map(b => {
         const fb = b.feedback;
         const edited = fb.updatedAt && fb.createdAt && fb.updatedAt.slice(0, 16) !== fb.createdAt.slice(0, 16);
@@ -1141,7 +1269,11 @@
           h('div', { class: 'fb-meta' }, dateEl(b.date), ' · ' + lessonById(F.lessons, b.lesson).name),
           b.topic ? h('div', { class: 'fb-topic' }, b.topic) : null,
           stars(fb.rating),
-          h('div', { class: 'fb-text' }, fb.text),
+          h('div', { class: 'fb-text' }, fbTextNodes(fb.text)),
+          fb.tags ? h('div', { class: 'tags' },
+            (fb.tags.activityTypes || []).map(t => tagBtn(t)),
+            (fb.tags.aids || []).map(t => tagBtn(t, 'aid')),
+            (fb.tags.topics || []).map(t => tagBtn(t, 'topic'))) : null,
           h('div', { class: 'fb-foot' },
             edited ? h('span', null, 'נערך') : null,
             b.canEdit ? h('div', { class: 'actions' }, h('button', { class: 'link', type: 'button', onclick: () => openFeedback(b) }, 'עריכה')) : null));
@@ -1515,6 +1647,21 @@
     return h('div', { class: 'panel' },
       h('div', { class: 'head-row' },
         h('div', null, h('h2', null, 'משובים'), h('p', { class: 'muted', style: 'margin:0' }, 'עריכה ומחיקה של משובים שהמורות כתבו. מחיקת משוב לא מוחקת את השיבוץ.')),
+        A.ai && A.feedback.some(b => !b.feedback.tags) ? h('button', {
+          class: 'btn ai-btn', type: 'button', id: 'tagAllBtn',
+          onclick: (e) => {
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            const step = (done) => call('adminTagFeedback').then(data => {
+              S.adminData = data;
+              done += data.tagged;
+              btn.textContent = '✨ מתייגת… (' + done + ')';
+              if (data.remaining > 0 && data.tagged > 0) return step(done);
+              renderAdmin(); toast('תויגו ' + done + ' משובים');
+            });
+            step(0).catch(err => { btn.disabled = false; toast(errMsg(err), true); });
+          },
+        }, '✨ תיוג משובים שעוד לא תויגו') : null,
         A.feedback.length ? h('button', {
           class: 'btn danger', type: 'button',
           onclick: () => F.teacher

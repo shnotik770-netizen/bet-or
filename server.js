@@ -12,6 +12,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const ai = require('./ai');
 
 const CONFIG = {
   SCHOOL_NAME: 'בנות מנחם',
@@ -296,6 +297,36 @@ function removeBooking(b) {
   promoteWaitlist(b.date, b.lesson);
 }
 
+/* ---------- AI helpers ---------- */
+
+const aiCalls = new Map();
+function checkAiRate(key) {
+  const now = Date.now();
+  const a = aiCalls.get(key);
+  if (!a || a.reset < now) { aiCalls.set(key, { n: 1, reset: now + 60 * 60 * 1000 }); return; }
+  if (++a.n > 40) fail('הגעת למספר הפניות המרבי לעוזר ה־AI בשעה הזו. נסי שוב מאוחר יותר');
+}
+
+async function lessonCtx(b) {
+  const sat = addDays(b.date, 6 - dow(b.date));
+  const cal = await getCalendar(addDays(sat, -6), sat);
+  return { date: b.date, parasha: cal.parashot[sat] || '', className: b.className, topic: b.topic };
+}
+
+/** Tag a feedback in the background; skip if it changed meanwhile. */
+function tagInBackground(b) {
+  if (!ai.enabled()) return;
+  const stamp = b.feedback.updatedAt;
+  (async () => {
+    try {
+      const tags = await ai.tagFeedback(await lessonCtx(b), b.feedback.text);
+      if (b.feedback && b.feedback.updatedAt === stamp) { b.feedback.tags = tags; save(); }
+    } catch (e) {
+      console.error('Tagging failed:', e.message);
+    }
+  })();
+}
+
 function adminData() {
   const w = windowNow();
   const from = addDays(w.today, -CONFIG.FEEDBACK_DAYS);
@@ -314,6 +345,7 @@ function adminData() {
       future: db.bookings.filter(b => b.seriesId === x.id && b.date >= w.today).length,
     })),
     waitingCount: db.waitlist.filter(x => x.date >= w.today).length,
+    ai: ai.enabled(),
     feedback: db.bookings.filter(b => b.feedback && b.feedback.text)
       .map(b => Object.assign(publicBooking(b, null), { feedback: b.feedback, canEdit: true }))
       .sort((a, b) => (b.date + b.lesson).localeCompare(a.date + a.lesson)),
@@ -365,6 +397,7 @@ const api = {
         schoolDays: CONFIG.SCHOOL_DAYS, lessons: lessons(Math.max.apply(null, [maxLessons()].concat(weekBookings.map(b => b.lesson)))),
         lessonsByDay: lessonsPerDay(), closedDates: closedDatesBetween(w.start, w.end),
         blockedSlots: blockedBetween(w.start, w.end),
+        ai: ai.enabled(),
       },
       teachers: ctx.admin ? db.teachers.filter(t => t.active).map(t => ({ id: t.id, name: t.name })) : [],
       bookings: weekBookings.map(b => publicBooking(b, ctx)),
@@ -474,6 +507,7 @@ const api = {
     return {
       today: w.today,
       lessons: lessons(CONFIG.MAX_LESSONS),
+      ai: ai.enabled(),
       feed: feed.map(out).sort(byDateDesc),
       pending: pending.map(out).sort(byDateDesc),
       calendar,
@@ -494,15 +528,42 @@ const api = {
     } else {
       const rating = Number(req.rating);
       const now = new Date().toISOString();
+      const prev = b.feedback;
       b.feedback = {
         text,
         rating: rating >= 1 && rating <= 5 ? Math.round(rating) : null,
-        createdAt: (b.feedback && b.feedback.createdAt) || now,
+        createdAt: (prev && prev.createdAt) || now,
         updatedAt: now,
       };
+      if (prev && prev.tags && prev.text === text) b.feedback.tags = prev.tags;
+      else tagInBackground(b);
     }
     save();
     return api.getFeedback(ctx);
+  },
+
+  /**
+   * עזרה מה־AI בכתיבת משוב.
+   * step 'questions': שאלות המשך על הטיוטה. step 'compose': ניסוח המשוב מהטיוטה והתשובות.
+   */
+  async feedbackAssist(ctx, req) {
+    requireAny(ctx);
+    req = req || {};
+    if (!ai.enabled()) fail('עוזר ה־AI לא מופעל');
+    const b = db.bookings.find(x => x.id === String(req.id || ''));
+    if (!b) fail('השיעור לא נמצא');
+    if (!canManage(ctx, b)) fail('רק המורה שלימדה את השיעור יכולה לכתוב עליו משוב');
+    checkAiRate(ctx.teacher ? ctx.teacher.id : 'admin');
+    const draft = cleanMultiline(req.draft, 3000);
+    const c = await lessonCtx(b);
+    if (req.step === 'questions') {
+      if (!draft) fail('כתבי או הקליטי כמה מילים על השיעור, ואז אעזור להשלים');
+      return { questions: await ai.followupQuestions(c, draft) };
+    }
+    const answers = (Array.isArray(req.answers) ? req.answers : []).slice(0, 3)
+      .map(x => ({ q: clean(x && x.q, 200), a: cleanMultiline(x && x.a, 1000) }));
+    if (!draft && !answers.some(x => x.a)) fail('אין עדיין מה לנסח');
+    return { text: await ai.composeFeedback(c, draft, answers) };
   },
 
   /* ----- Admin ----- */
@@ -719,6 +780,21 @@ const api = {
     db.series = db.series.filter(s => s !== x);
     save();
     return adminData();
+  },
+
+  /** תיוג משובים קיימים שעוד לא תויגו – עד 10 בכל קריאה (הדף קורא שוב עד שנגמר). */
+  async adminTagFeedback(ctx) {
+    requireAdmin(ctx);
+    if (!ai.enabled()) fail('עוזר ה־AI לא מופעל');
+    const todo = db.bookings.filter(b => b.feedback && b.feedback.text && !b.feedback.tags);
+    let tagged = 0;
+    for (const b of todo.slice(0, 10)) {
+      const stamp = b.feedback.updatedAt;
+      const tags = await ai.tagFeedback(await lessonCtx(b), b.feedback.text);
+      if (b.feedback && b.feedback.updatedAt === stamp) { b.feedback.tags = tags; tagged++; }
+    }
+    save();
+    return Object.assign(adminData(), { tagged, remaining: Math.max(0, todo.length - Math.min(10, todo.length)) });
   },
 
   /** מחיקת משובים: רשימת מזהי שיבוצים, או 'all' למחיקת כל המשובים. השיבוצים עצמם נשארים. */
