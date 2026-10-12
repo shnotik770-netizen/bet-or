@@ -28,6 +28,9 @@ const CONFIG = {
   MAX_LESSONS: 10,
   // כמה ימים אחורה שיעור שעבר מופיע כ"ממתין למשוב"
   FEEDBACK_DAYS: 60,
+  // תזכורת למשוב: על שיעורים מ־10 הימים האחרונים, החל מ־13:30 ביום השיעור
+  FEEDBACK_REMIND_DAYS: 10,
+  FEEDBACK_REMIND_TIME: '13:30',
 };
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -86,6 +89,22 @@ function save() {
 }
 
 /* ---------- Dates ---------- */
+
+/** Current time in Israel as "HH:MM". */
+function nowTime() {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: CONFIG.TIMEZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+}
+
+/** The teacher's recent lessons that still have no feedback (newest first). */
+function feedbackDue(teacher, w) {
+  if (!teacher) return [];
+  const from = addDays(w.today, -CONFIG.FEEDBACK_REMIND_DAYS);
+  const todayCounts = nowTime() >= CONFIG.FEEDBACK_REMIND_TIME;
+  return db.bookings
+    .filter(b => b.teacherId === teacher.id && !hasFb(b) && b.date >= from && (b.date < w.today || (b.date === w.today && todayCounts)))
+    .sort((a, b) => (b.date + b.lesson).localeCompare(a.date + a.lesson))
+    .map(b => ({ id: b.id, date: b.date, lesson: b.lesson, teacher: b.teacher, className: b.className, topic: b.topic, mine: true }));
+}
 
 function todayStr() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: CONFIG.TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -436,6 +455,7 @@ const api = {
       teachers: ctx.admin ? db.teachers.filter(t => t.active).map(t => ({ id: t.id, name: t.name })) : [],
       bookings: weekBookings.map(b => publicBooking(b, ctx)),
       waitlist: waitlistView(ctx, w),
+      feedbackDue: feedbackDue(ctx.teacher, w),
       notices: ctx.teacher ? db.notices.filter(n => n.teacherId === ctx.teacher.id && !n.read).map(n => ({ id: n.id, text: n.text, createdAt: n.createdAt })) : [],
       calendar: await getCalendar(w.start, w.end),
     };

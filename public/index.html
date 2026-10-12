@@ -286,6 +286,11 @@
   .stat b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: "Rubik", sans-serif; }
   .stat span { font-size: 13px; color: var(--ink-2); }
   details summary { cursor: pointer; color: var(--teal); font-weight: 700; margin-top: 14px; }
+  .remind { display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; background: var(--wood-soft); border: 1.5px solid var(--wood-line); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 16px; }
+  .remind .r-text { flex: 1 1 260px; }
+  .remind .r-more { color: var(--ink-2); font-size: 13px; }
+  .remind .r-actions { display: flex; gap: 8px; align-items: center; }
+  .nav-badge { display: inline-block; min-width: 18px; height: 18px; line-height: 18px; padding: 0 5px; margin-inline-start: 6px; border-radius: 999px; background: var(--terra); color: #fff; font-size: 11px; font-weight: 700; text-align: center; vertical-align: 1px; }
   .intro-row { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; margin-bottom: 14px; }
   .intro-row .intro { margin-bottom: 0; flex: 1; }
   .print-title { display: none; }
@@ -516,6 +521,7 @@
     <div id="loading" class="loading">טוען…</div>
     <section id="scheduleView" hidden>
       <div class="notices" id="notices" hidden></div>
+      <div class="remind" id="fbRemind" hidden></div>
       <div class="print-title" id="printTitle"></div>
       <div class="intro-row"><div class="intro" id="intro"></div><button class="btn small print-btn" id="printBtn" type="button">🖨 הדפסת השבוע</button></div>
       <div class="mine-strip" id="mineStrip" hidden></div>
@@ -866,6 +872,8 @@
     $('loading').hidden = true;
     $('navAdmin').hidden = !S.adminCode;
     $('navFeedback').hidden = isGuest();
+    const due = S.data.feedbackDue || [];
+    fill($('navFeedback'), 'משובים', due.length ? h('span', { class: 'nav-badge', title: due.length === 1 ? 'שיעור אחד מחכה למשוב' : due.length + ' שיעורים מחכים למשוב' }, due.length) : null);
     Array.prototype.forEach.call($('nav').querySelectorAll('a'), a => {
       const target = a.getAttribute('href').replace(/^#\/?/, '') || 'schedule';
       if (target === r) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -949,6 +957,8 @@
     fill($('printTitle'), h('h2', null, d.config.spaceName + ' · ' + weekTitle(pws)),
       h('span', null, hebDate(pws) + ' – ' + hebDate(addDays(pws, 5)) + '  (' + fmtShort(pws) + '–' + fmtShort(addDays(pws, 5)) + ') · ' + d.config.schoolName));
 
+    renderReminder();
+
     const notices = d.notices || [];
     $('notices').hidden = !notices.length;
     fill($('notices'), notices.map(n => h('div', { class: 'n-row' }, h('span', null, '🔔'), h('span', null, n.text))),
@@ -962,6 +972,23 @@
   function quotaFull(date) {
     const limit = S.me && !S.adminCode ? S.me.weeklyLimit : 0;
     return !!limit && myCount(addDays(date, -dow(date))) >= limit;
+  }
+
+  /** Gentle reminder for the teacher's recent lessons without feedback ("later" hides it until tomorrow). */
+  function renderReminder() {
+    const box = $('fbRemind');
+    const due = S.data.feedbackDue || [];
+    const today = S.data.window.today;
+    if (!due.length || store.get('beitor.remindHide') === today) { box.hidden = true; return; }
+    const b = due[0];
+    const when = b.date === today ? 'מהיום' : (b.date === addDays(today, -1) ? 'מאתמול' : 'מ' + fmtLong(b.date));
+    box.hidden = false;
+    fill(box,
+      h('div', { class: 'r-text' }, '✎ השיעור שלך ', h('b', null, when), ' (' + b.className + ' · ' + lessonName(b.lesson) + ') מחכה למשוב · 20 שניות בשאלון',
+        due.length > 1 ? h('span', { class: 'r-more' }, (due.length === 2 ? ' · ועוד שיעור אחד' : ' · ועוד ' + (due.length - 1) + ' שיעורים')) : null),
+      h('div', { class: 'r-actions' },
+        h('button', { class: 'btn primary small', type: 'button', onclick: () => openFeedback(b) }, 'כתיבת משוב'),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { store.set('beitor.remindHide', today); box.hidden = true; } }, 'אחר כך')));
   }
 
   function renderWeek(ws) {
