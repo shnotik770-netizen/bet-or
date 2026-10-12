@@ -323,6 +323,29 @@
     .is-past .slot.taken, .is-past .day-head, .is-closed .day-head { opacity: 1; }
   }
 
+  .seg { display: flex; background: var(--surface-2); border-radius: 999px; padding: 4px; gap: 4px; }
+  .seg button { flex: 1; border: 0; background: none; border-radius: 999px; padding: 8px 10px; font-weight: 600; font-size: 14px; color: var(--ink-2); }
+  .seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+  .quiz { display: flex; flex-direction: column; gap: 14px; }
+  .qq { display: flex; flex-direction: column; gap: 6px; }
+  .qq-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .qq-title .req { color: var(--danger); margin-inline-start: 2px; }
+  .qq-title .hint { font-weight: 400; }
+  .picks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pick { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 14px; color: var(--ink); }
+  .pick[aria-pressed="true"] { background: color-mix(in srgb, var(--c-petrol) 16%, var(--surface)); border-color: var(--teal); color: var(--teal-strong); font-weight: 600; }
+  .pick.emo { padding: 6px 12px; }
+  .quiz-sep { border: 0; border-top: 1px dashed var(--line); margin: 2px 0; }
+  .private-note { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; }
+  .fb-quiz { display: flex; flex-direction: column; gap: 7px; }
+  .fb-eng { font-size: 14px; }
+  .fb-facts { font-size: 13px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .fb-facts b { color: var(--ink); font-weight: 600; }
+  .fb-line { font-size: 14px; line-height: 1.6; }
+  .fb-line b { font-weight: 700; }
+  .fb-tip { background: var(--wood-soft); border-radius: 12px; padding: 8px 12px; font-size: 14px; line-height: 1.6; }
+  .reco { font-size: 11px; font-weight: 700; color: #fff; background: var(--terra); border-radius: 999px; padding: 1px 9px; margin-inline-start: auto; align-self: center; }
+  .fb-issue { font-size: 12px; color: var(--ink-2); background: var(--surface-2); border-radius: 10px; padding: 6px 10px; }
   .fb-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: -6px; }
   .fb-tools .hint { flex-basis: 100%; }
   .ai-btn { background: color-mix(in srgb, var(--c-powder) 30%, var(--surface)); color: var(--ink); }
@@ -533,20 +556,27 @@
   <form method="dialog" id="fbForm">
     <h3>משוב על השיעור</h3>
     <p class="dlg-sub" id="fbSummary"></p>
-    <div>
-      <div class="hint" style="margin-bottom:4px">איך היה? <span>(לא חובה)</span></div>
-      <div class="rate" id="fbRate" role="radiogroup" aria-label="דירוג"></div>
+    <div class="seg" role="tablist" aria-label="איך לכתוב את המשוב">
+      <button type="button" role="tab" data-mode="quiz">⚡ שאלון מהיר</button>
+      <button type="button" role="tab" data-mode="text">✍️ כתיבה חופשית או הקלטה</button>
     </div>
-    <label>המשוב שלך
-      <textarea id="fbText" rows="6" maxlength="2000" required placeholder="מה עשיתן במרחב? איך הבנות הגיבו? מה עבד במיוחד, ומה הייתן משנות? טיפ למורות אחרות…"></textarea>
+    <div id="fbQuiz" class="quiz"></div>
+    <div id="fbTextMode" class="quiz">
+      <div id="fbEngText"></div>
+      <label>המשוב שלך
+        <textarea id="fbText" rows="6" maxlength="2000" placeholder="מה עשיתן במרחב? איך הבנות הגיבו? מה עבד במיוחד, ומה הייתן משנות? טיפ למורות אחרות…"></textarea>
+      </label>
+      <div class="fb-tools">
+        <button type="button" class="btn small" id="fbMic" hidden>🎤 הקלטה</button>
+        <button type="button" class="btn small ai-btn" id="fbAi" hidden>✨ עזרה בניסוח</button>
+        <button type="button" class="linkish" id="fbUndo" hidden>חזרה לטיוטה שלי</button>
+        <span class="hint" id="fbMicHint"></span>
+      </div>
+      <div class="ai-box" id="fbAiBox" hidden></div>
+    </div>
+    <label class="private-note">🔧 משהו חסר, נגמר או לא תקין במרחב? <span class="hint">(לא חובה · יגיע רק להנהלה)</span>
+      <input id="fbIssue" maxlength="300" placeholder="למשל: נגמר הדבק בפינת היצירה">
     </label>
-    <div class="fb-tools">
-      <button type="button" class="btn small" id="fbMic" hidden>🎤 הקלטה</button>
-      <button type="button" class="btn small ai-btn" id="fbAi" hidden>✨ עזרה בניסוח</button>
-      <button type="button" class="linkish" id="fbUndo" hidden>חזרה לטיוטה שלי</button>
-      <span class="hint" id="fbMicHint"></span>
-    </div>
-    <div class="ai-box" id="fbAiBox" hidden></div>
     <div class="dlg-actions">
       <button class="btn primary" id="fbSubmit" value="ok">פרסום המשוב</button>
       <button class="btn" value="cancel" formnovalidate>ביטול</button>
@@ -1069,23 +1099,86 @@
   }
 
   /* ---------- Feedback ---------- */
-  let fbTarget = null, fbRating = 0;
-  function renderRate() {
-    fill($('fbRate'), [1, 2, 3, 4, 5].map(n => h('button', {
-      type: 'button', class: n <= fbRating ? 'on' : '', role: 'radio', 'aria-checked': String(n === fbRating), 'aria-label': n + ' כוכבים',
-      onclick: () => { fbRating = fbRating === n ? 0 : n; renderRate(); },
-    }, '★')));
+  let fbTarget = null, fbQ = null;
+  const ENGAGEMENT = [[1, '😐', 'מעטות'], [2, '🙂', 'חלק'], [3, '😃', 'רובן'], [4, '🤩', 'כולן, מרותקות']];
+  const QUIZ_LABELS = {
+    achieved: { title: 'השגת את המטרה?', opts: [['yes', 'כן'], ['partly', 'חלקית'], ['no', 'לא']] },
+    recommend: { title: 'היית ממליצה למורות אחרות?', opts: [['very', 'מאוד'], ['changes', 'כן, עם שינויים'], ['less', 'פחות']] },
+    prep: { title: 'כמה הכנה זה דרש?', opts: [['none', 'כמעט בלי'], ['half', 'עד חצי שעה'], ['more', 'יותר']] },
+  };
+  function quizLists() {
+    return (S.fb && S.fb.quiz) || (S.data && S.data.config.quiz) || (S.adminData && S.adminData.settings.quizLists) || { activities: [], goals: [], aids: [] };
   }
+  function fbMode(m) {
+    if (m) { fbQ.mode = m; store.set('beitor.fbMode', m); }
+    Array.prototype.forEach.call(document.querySelectorAll('#fbForm .seg button'), btn => btn.setAttribute('aria-selected', String(btn.dataset.mode === fbQ.mode)));
+    $('fbQuiz').hidden = fbQ.mode !== 'quiz';
+    $('fbTextMode').hidden = fbQ.mode !== 'text';
+    if (fbQ.mode === 'quiz') { stopRec(); renderQuiz(); } else renderEngagement($('fbEngText'), false);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#fbForm .seg button'), btn => btn.addEventListener('click', () => fbMode(btn.dataset.mode)));
+
+  function qq(title, required, hint, body) {
+    return h('div', { class: 'qq' }, h('div', { class: 'qq-title' }, title, required ? h('span', { class: 'req', 'aria-label': 'חובה' }, ' *') : null,
+      hint ? h('span', { class: 'hint' }, ' ' + hint) : null), body);
+  }
+  function multiPicks(key, list) {
+    return h('div', { class: 'picks' }, list.map(x => h('button', {
+      type: 'button', class: 'pick', 'aria-pressed': String(fbQ[key].indexOf(x) >= 0),
+      onclick: () => { const i = fbQ[key].indexOf(x); if (i >= 0) fbQ[key].splice(i, 1); else fbQ[key].push(x); renderQuiz(); },
+    }, x)));
+  }
+  function singlePicks(key, opts) {
+    return h('div', { class: 'picks' }, opts.map(o => h('button', {
+      type: 'button', class: 'pick', 'aria-pressed': String(fbQ[key] === o[0]),
+      onclick: () => { fbQ[key] = fbQ[key] === o[0] ? null : o[0]; renderQuiz(); },
+    }, o[1])));
+  }
+  function renderEngagement(root, required) {
+    fill(root, qq('כמה הבנות היו מעורבות?', required, required ? '' : '(לא חובה)', h('div', { class: 'picks' }, ENGAGEMENT.map(e => h('button', {
+      type: 'button', class: 'pick emo', 'aria-pressed': String(fbQ.engagement === e[0]),
+      onclick: () => { fbQ.engagement = fbQ.engagement === e[0] ? null : e[0]; if (fbQ.mode === 'quiz') renderQuiz(); else renderEngagement(root, required); },
+    }, e[1] + ' ' + e[2])))));
+  }
+  function lineInput(key, placeholder) {
+    const inp = h('input', { maxlength: 300, placeholder: placeholder, value: fbQ[key] || '' });
+    inp.addEventListener('input', () => { fbQ[key] = inp.value; });
+    return inp;
+  }
+  function renderQuiz() {
+    const L = quizLists();
+    const eng = h('div');
+    renderEngagement(eng, true);
+    fill($('fbQuiz'),
+      qq('מה עשינו?', true, '(אפשר כמה)', multiPicks('activities', L.activities)),
+      L.goals.length ? qq('מה הייתה המטרה?', false, '', multiPicks('goals', L.goals)) : null,
+      L.aids.length ? qq('באילו עזרים השתמשנו?', false, '', multiPicks('aids', L.aids)) : null,
+      eng,
+      Object.keys(QUIZ_LABELS).map(k => qq(QUIZ_LABELS[k].title, false, '', singlePicks(k, QUIZ_LABELS[k].opts))),
+      h('hr', { class: 'quiz-sep' }),
+      qq('⭐ רגע השיא – מה הכי עבד?', false, '(לא חובה)', lineInput('highlight', 'למשל: התחנה של החושך – הבנות לא רצו לצאת')),
+      qq('🔁 מה הייתי עושה אחרת?', false, '(לא חובה)', lineInput('change', 'למשל: לחלק לקבוצות קטנות יותר')),
+      qq('💡 טיפ למורה שתעשה שיעור דומה', false, '(לא חובה)', lineInput('tip', 'למשל: כדאי להכין את התחנות בהפסקה שלפני')));
+  }
+
   function openFeedback(b) {
     fbTarget = b;
     const lessons = (S.fb && S.fb.lessons) || (S.data && S.data.config.lessons) || [];
     $('fbSummary').textContent = fmtLong(b.date) + ' · ' + lessonById(lessons, b.lesson).name + ' · ' + b.className + (b.topic ? ' · ' + b.topic : '') + (S.me && b.teacher === S.me.name ? '' : ' · ' + b.teacher);
-    fbRating = (b.feedback && b.feedback.rating) || 0;
-    renderRate();
-    $('fbText').value = (b.feedback && b.feedback.text) || '';
-    $('fbDelete').hidden = !(b.feedback && b.feedback.text);
+    const fb = b.feedback || {};
+    fbQ = {
+      mode: b.feedback ? (fb.mode || 'text') : (store.get('beitor.fbMode') || 'quiz'),
+      engagement: fb.engagement || null,
+      activities: (fb.activities || []).slice(), goals: (fb.goals || []).slice(), aids: (fb.aids || []).slice(),
+      achieved: fb.achieved || null, recommend: fb.recommend || null, prep: fb.prep || null,
+      highlight: fb.highlight || '', change: fb.change || '', tip: fb.tip || '',
+    };
+    $('fbText').value = fb.text || '';
+    $('fbIssue').value = fb.spaceIssue || '';
+    $('fbDelete').hidden = !b.feedback;
     $('fbSubmit').disabled = false;
     resetFbTools();
+    fbMode();
     $('fbDlg').showModal();
   }
 
@@ -1183,13 +1276,14 @@
     fbPrevDraft = null;
     $('fbUndo').hidden = true;
   });
-  function saveFeedback(text) {
+  function saveFeedback(payload) {
+    const del = !!payload.delete;
     $('fbSubmit').disabled = true;
-    return call('saveFeedback', { id: fbTarget.id, text: text, rating: fbRating }).then(data => {
+    return call('saveFeedback', Object.assign({ id: fbTarget.id }, payload)).then(data => {
       S.fb = data;
       $('fbDlg').close();
-      toast(route() === 'admin' ? (text ? 'המשוב עודכן' : 'המשוב נמחק') : (text ? 'המשוב פורסם – תודה! 🙏' : 'המשוב נמחק'));
-      if (text) S.flashId = fbTarget.id;
+      toast(del ? 'המשוב נמחק' : (route() === 'admin' ? 'המשוב עודכן' : 'המשוב פורסם – תודה! 🙏'));
+      if (!del) S.flashId = fbTarget.id;
       if (route() === 'feedback') renderFeedback();
       if (route() === 'admin') loadAdmin();
       refresh();
@@ -1198,14 +1292,39 @@
   $('fbForm').addEventListener('submit', (ev) => {
     if (ev.submitter && ev.submitter.value !== 'ok') return;
     ev.preventDefault();
-    const text = $('fbText').value.trim();
-    if (!text) { toast('יש לכתוב משוב', true); return; }
-    saveFeedback(text);
+    stopRec();
+    const base = { mode: fbQ.mode, engagement: fbQ.engagement, spaceIssue: $('fbIssue').value.trim() };
+    if (fbQ.mode === 'quiz') {
+      if (!fbQ.activities.length) { toast('סמני מה עשיתן בשיעור', true); return; }
+      if (!fbQ.engagement) { toast('סמני כמה הבנות היו מעורבות', true); return; }
+      saveFeedback(Object.assign(base, {
+        activities: fbQ.activities, goals: fbQ.goals, aids: fbQ.aids,
+        achieved: fbQ.achieved, recommend: fbQ.recommend, prep: fbQ.prep,
+        highlight: (fbQ.highlight || '').trim(), change: (fbQ.change || '').trim(), tip: (fbQ.tip || '').trim(),
+      }));
+    } else {
+      const text = $('fbText').value.trim();
+      if (!text) { toast('כתבי או הקליטי את המשוב', true); return; }
+      saveFeedback(Object.assign(base, { text: text }));
+    }
   });
   $('fbDelete').addEventListener('click', () => {
     $('fbDlg').close();
-    confirmBox('למחוק את המשוב?', 'המשוב יוסר מדף המשובים.', 'מחיקה').then(ok => { if (ok) saveFeedback(''); else $('fbDlg').showModal(); });
+    confirmBox('למחוק את המשוב?', 'המשוב יוסר מדף המשובים.', 'מחיקה').then(ok => { if (ok) saveFeedback({ delete: true }); else $('fbDlg').showModal(); });
   });
+
+  /* ----- Feedback display helpers ----- */
+  function engLabel(n) { const e = ENGAGEMENT.find(x => x[0] === n); return e ? e[1] + ' ' + e[2] : ''; }
+  function optLabel(key, v) { const o = QUIZ_LABELS[key].opts.find(x => x[0] === v); return o ? o[1] : ''; }
+  /** All tags of a feedback: chosen in the questionnaire, or added by the AI. */
+  function fbTags(fb) {
+    const t = fb.tags || {};
+    return [].concat(fb.activities || [], fb.goals || [], fb.aids || [], t.activityTypes || [], t.aids || [], t.topics || []);
+  }
+  /** Plain-text summary (for search and the admin table). */
+  function fbPlain(fb) {
+    return [fb.text, fb.highlight, fb.change, fb.tip].filter(Boolean).join(' · ');
+  }
 
   function loadFeedback() {
     return call('getFeedback').then(data => { S.fb = data; if (route() === 'feedback') renderFeedback(); })
@@ -1228,9 +1347,8 @@
     const f = S.fbFilter;
     const names = Array.from(new Set(F.feed.map(b => b.teacher))).sort((a, b) => a.localeCompare(b, 'he'));
     const q = f.q.trim();
-    const tagsOf = b => { const t = b.feedback.tags || {}; return [].concat(t.activityTypes || [], t.aids || [], t.topics || []); };
-    const feed = F.feed.filter(b => (!f.teacher || b.teacher === f.teacher) && (!f.tag || tagsOf(b).indexOf(f.tag) >= 0) &&
-      (!q || [b.teacher, b.className, b.topic, b.feedback.text, weekTitleFrom(F.calendar, addDays(b.date, -dow(b.date)))].concat(tagsOf(b)).join(' ').indexOf(q) >= 0));
+    const feed = F.feed.filter(b => (!f.teacher || b.teacher === f.teacher) && (!f.tag || fbTags(b.feedback).indexOf(f.tag) >= 0) &&
+      (!q || [b.teacher, b.className, b.topic, fbPlain(b.feedback), weekTitleFrom(F.calendar, addDays(b.date, -dow(b.date)))].concat(fbTags(b.feedback)).join(' ').indexOf(q) >= 0));
     const tagBtn = (t, cls) => h('button', { type: 'button', class: 'tag' + (cls ? ' ' + cls : ''), title: 'הצגת כל המשובים עם "' + t + '"', onclick: () => { f.tag = t; renderFeedback(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, t);
     const myPending = F.pending.filter(b => b.mine || (!S.me && S.adminCode));
 
@@ -1265,15 +1383,27 @@
         const edited = fb.updatedAt && fb.createdAt && fb.updatedAt.slice(0, 16) !== fb.createdAt.slice(0, 16);
         return h('article', { class: 'fb-card' + (S.flashId === b.id ? ' flash' : ''), id: 'fb-' + b.id, style: teacherColor(b.teacher) },
           h('div', { class: 'fb-week' }, weekTitleFrom(F.calendar, addDays(b.date, -dow(b.date)))),
-          h('div', { class: 'fb-who' }, h('strong', null, b.teacher), h('span', { class: 'fb-meta' }, b.className)),
+          h('div', { class: 'fb-who' }, h('strong', null, b.teacher), h('span', { class: 'fb-meta' }, b.className),
+            fb.recommend === 'very' ? h('span', { class: 'reco', title: 'המורה ממליצה מאוד' }, '⭐ מומלץ') : null),
           h('div', { class: 'fb-meta' }, dateEl(b.date), ' · ' + lessonById(F.lessons, b.lesson).name),
           b.topic ? h('div', { class: 'fb-topic' }, b.topic) : null,
           stars(fb.rating),
-          h('div', { class: 'fb-text' }, fbTextNodes(fb.text)),
-          fb.tags ? h('div', { class: 'tags' },
-            (fb.tags.activityTypes || []).map(t => tagBtn(t)),
-            (fb.tags.aids || []).map(t => tagBtn(t, 'aid')),
-            (fb.tags.topics || []).map(t => tagBtn(t, 'topic'))) : null,
+          fb.engagement ? h('div', { class: 'fb-eng' }, 'מעורבות הבנות: ', h('b', null, engLabel(fb.engagement))) : null,
+          fb.mode === 'quiz' ? h('div', { class: 'fb-quiz' },
+            (fb.achieved || fb.recommend || fb.prep) ? h('div', { class: 'fb-facts' },
+              fb.achieved ? h('span', null, 'המטרה הושגה: ', h('b', null, optLabel('achieved', fb.achieved))) : null,
+              fb.recommend ? h('span', null, 'ממליצה: ', h('b', null, optLabel('recommend', fb.recommend))) : null,
+              fb.prep ? h('span', null, 'הכנה: ', h('b', null, optLabel('prep', fb.prep))) : null) : null,
+            fb.highlight ? h('div', { class: 'fb-line' }, h('b', null, '⭐ רגע השיא: '), fb.highlight) : null,
+            fb.change ? h('div', { class: 'fb-line' }, h('b', null, '🔁 הייתי עושה אחרת: '), fb.change) : null,
+            fb.tip ? h('div', { class: 'fb-tip' }, h('b', null, '💡 טיפ: '), fb.tip) : null)
+            : h('div', { class: 'fb-text' }, fbTextNodes(fb.text || '')),
+          (fb.activities || fb.goals || fb.aids || fb.tags) ? h('div', { class: 'tags' },
+            (fb.activities || []).map(t => tagBtn(t)),
+            (fb.goals || []).map(t => tagBtn(t, 'topic')),
+            (fb.aids || []).map(t => tagBtn(t, 'aid')),
+            fb.tags ? [(fb.tags.activityTypes || []).map(t => tagBtn(t)), (fb.tags.aids || []).map(t => tagBtn(t, 'aid')), (fb.tags.topics || []).map(t => tagBtn(t, 'topic'))] : null) : null,
+          fb.spaceIssue ? h('div', { class: 'fb-issue' }, '🔧 נמסר להנהלה: ' + fb.spaceIssue + (fb.spaceIssueDone ? ' · טופל ✓' : '')) : null,
           h('div', { class: 'fb-foot' },
             edited ? h('span', null, 'נערך') : null,
             b.canEdit ? h('div', { class: 'actions' }, h('button', { class: 'link', type: 'button', onclick: () => openFeedback(b) }, 'עריכה')) : null));
@@ -1417,6 +1547,7 @@
       { key: 'ahead', title: 'הרשמה מראש', c: 'cream', sum: (st.daysAhead || A.defaultDaysAhead) + ' ימים קדימה', render: aheadSection },
       { key: 'limit', title: 'מגבלת שעות שבועית', c: 'slate', sum: st.weeklyLimit ? st.weeklyLimit + ' שעות לכל מורה' : 'ללא הגבלה', render: limitSection },
       { key: 'blocks', title: 'חסימת שעות ביום', c: 'rose', sum: upcomingBlocks ? (upcomingBlocks === 1 ? 'יום אחד עם חסימות' : upcomingBlocks + ' ימים עם חסימות') : 'אין חסימות', render: () => renderBlocksPanel(A) },
+      { key: 'quiz', title: 'רשימות בשאלון המשוב', c: 'mist', sum: (st.quizLists ? st.quizLists.activities.length + ' פעילויות · ' + st.quizLists.aids.length + ' עזרים' : ''), render: quizListsSection },
       { key: 'vacations', title: 'ימי חופש', c: 'olive', sum: upcomingVac ? (upcomingVac === 1 ? 'חופשה קרובה אחת' : upcomingVac + ' חופשות קרובות') : 'לא הוגדרו', render: vacationsSection },
     ];
     const open = SECTIONS.find(x => x.key === S.settingsOpen);
@@ -1474,6 +1605,19 @@
       return section('מגבלת שעות שבועית', 'כמה שעות כל מורה יכולה להשתבץ בכל שבוע. ריק = ללא הגבלה. אפשר לקבוע מגבלה אחרת למורה מסוימת ברשימת המורות (עריכה). ההנהלה יכולה לשבץ גם מעבר למגבלה.',
         h('label', { style: 'max-width:220px' }, 'שעות בשבוע לכל מורה', wl),
         () => save({ weeklyLimit: wl.value.trim() }, 'המגבלה נשמרה'));
+    }
+
+    function quizListsSection() {
+      const L = st.quizLists || { activities: [], goals: [], aids: [] };
+      const box = (list) => h('textarea', { rows: 8 }, list.join('\n'));
+      const act = box(L.activities), goals = box(L.goals), aids = box(L.aids);
+      const lines = ta => ta.value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+      return section('רשימות בשאלון המשוב', 'האפשרויות שהמורות בוחרות בשאלון המהיר. כל אפשרות בשורה נפרדת. שינוי לא משנה משובים שכבר נכתבו.',
+        h('div', { class: 'times', style: 'grid-template-columns:repeat(auto-fill,minmax(220px,1fr))' },
+          h('label', null, 'מה עשינו? (סוגי פעילות)', act),
+          h('label', null, 'מה הייתה המטרה?', goals),
+          h('label', null, 'באילו עזרים השתמשנו? (העזרים במרחב)', aids)),
+        () => save({ quizLists: { activities: lines(act), goals: lines(goals), aids: lines(aids) } }, 'הרשימות נשמרו'));
     }
 
     function vacationsSection() {
@@ -1644,7 +1788,23 @@
       });
     }
 
-    return h('div', { class: 'panel' },
+    const issues = A.issues || [];
+    const openIssues = issues.filter(x => !x.done);
+    const issuesPanel = issues.length ? h('div', { class: 'panel set-panel' },
+      h('h2', null, '🔧 בקשות טיפול במרחב', openIssues.length ? h('span', { class: 'hint' }, '  (' + (openIssues.length === 1 ? 'אחת פתוחה' : openIssues.length + ' פתוחות') + ')') : null),
+      h('p', { class: 'muted' }, 'מה שהמורות כתבו במשוב בשדה "משהו חסר, נגמר או לא תקין". רואה רק ההנהלה, והמורה שכתבה.'),
+      h('div', { class: 'table-wrap' }, h('table', null,
+        h('thead', null, h('tr', null, ['תאריך', 'מורה', 'מה צריך', ''].map(x => h('th', null, x)))),
+        h('tbody', null, issues.map(x => h('tr', { class: x.done ? 'inactive' : '' },
+          h('td', { style: 'white-space:nowrap' }, dateEl(x.date)),
+          h('td', null, x.teacher),
+          h('td', null, x.text),
+          h('td', null, h('div', { class: 'actions' }, h('button', {
+            class: 'link', type: 'button',
+            onclick: () => adminUpdate(call('adminIssueDone', x.id, !x.done), x.done ? 'הוחזר לפתוח' : 'סומן כטופל').catch(() => {}),
+          }, x.done ? 'החזרה לפתוח' : '✓ טופל'))))))))) : null;
+
+    return h('div', null, issuesPanel, h('div', { class: 'panel' },
       h('div', { class: 'head-row' },
         h('div', null, h('h2', null, 'משובים'), h('p', { class: 'muted', style: 'margin:0' }, 'עריכה ומחיקה של משובים שהמורות כתבו. מחיקת משוב לא מוחקת את השיבוץ.')),
         A.ai && A.feedback.some(b => !b.feedback.tags) ? h('button', {
@@ -1675,7 +1835,7 @@
           onclick: () => del(selectedIds, selectedIds.length === 1 ? 'יימחק המשוב המסומן.' : 'יימחקו ' + selectedIds.length + ' משובים מסומנים.'),
         }, 'מחיקת המסומנים' + (selectedIds.length ? ' (' + selectedIds.length + ')' : '')))) : null,
       rows.length ? h('div', { class: 'table-wrap' }, h('table', null,
-        h('thead', null, h('tr', null, h('th', null, allBox), ['תאריך', 'מורה', 'כיתה', 'דירוג', 'משוב', ''].map(x => h('th', null, x)))),
+        h('thead', null, h('tr', null, h('th', null, allBox), ['תאריך', 'מורה', 'כיתה', 'מעורבות', 'משוב', ''].map(x => h('th', null, x)))),
         h('tbody', null, rows.map(b => {
           const box = h('input', { type: 'checkbox', 'aria-label': 'סימון', onchange: (e) => { F.selected[b.id] = e.target.checked; renderAdmin(); } });
           box.checked = !!F.selected[b.id];
@@ -1684,13 +1844,14 @@
             h('td', { style: 'white-space:nowrap' }, dateEl(b.date), h('div', { class: 'hint' }, lessonById(lessons, b.lesson).name)),
             h('td', null, b.teacher),
             h('td', null, b.className, b.topic ? h('div', { class: 'hint' }, b.topic) : null),
-            h('td', { style: 'white-space:nowrap' }, stars(b.feedback.rating) || h('span', { class: 'hint' }, '—')),
-            h('td', { style: 'max-width:380px' }, h('div', { class: 'fb-text', style: 'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden' }, b.feedback.text)),
+            h('td', { style: 'white-space:nowrap' }, b.feedback.engagement ? engLabel(b.feedback.engagement) : (stars(b.feedback.rating) || h('span', { class: 'hint' }, '—'))),
+            h('td', { style: 'max-width:380px' }, h('div', { class: 'fb-text', style: 'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden' },
+              b.feedback.mode === 'quiz' ? [h('b', null, (b.feedback.activities || []).join(', ')), fbPlain(b.feedback) ? ' · ' + fbPlain(b.feedback) : ''] : (b.feedback.text || ''))),
             h('td', null, h('div', { class: 'actions' },
               h('button', { class: 'link', type: 'button', onclick: () => openFeedback(b) }, 'עריכה'),
               h('button', { class: 'link danger', type: 'button', onclick: () => del([b.id], 'יימחק המשוב של ' + b.teacher + ' מ' + fmtLong(b.date) + '.') }, 'מחיקה'))));
         }))))
-        : h('p', { class: 'empty-msg' }, 'אין משובים.'));
+        : h('p', { class: 'empty-msg' }, 'אין משובים.')));
   }
 
   function renderBookingsAdmin(A) {

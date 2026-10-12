@@ -55,6 +55,12 @@ db.settings = Object.assign({
   lessonsPerDay: Object.assign({}, CONFIG.DEFAULT_LESSONS_PER_DAY),
   // שיעורים חסומים ביום מסוים: { id, date, lessons: [3, 4], name }
   blockedSlots: [],
+  // רשימות התשובות בשאלון המשוב (ההנהלה עורכת)
+  quizLists: {
+    activities: ['תחנות', 'חושים', 'תנועה', 'יצירה', 'שיח ודיון', 'משחק', 'דרמה', 'ניסוי וחקר', 'קריאה וסיפור', 'מוזיקה'],
+    goals: ['למידת תוכן חדש', 'חזרה וחיזוק', 'העמקה ערכית־רגשית', 'גיבוש כיתתי', 'הכנה לחג או לפרשה'],
+    aids: ['פופים', 'הפינה העגולה', 'פינת קריאה וספרייה', 'כלי יצירה', 'מקרן ומסך', 'לוח מחיק', 'ערכת חושים'],
+  },
 }, db.settings);
 
 function daysAhead() { return db.settings.daysAhead > 0 ? db.settings.daysAhead : CONFIG.DAYS_AHEAD; }
@@ -200,7 +206,7 @@ function publicBooking(b, ctx) {
   return {
     id: b.id, date: b.date, lesson: b.lesson, teacher: b.teacher, className: b.className, topic: b.topic,
     mine: !!(ctx && ctx.teacher) && b.teacherId === ctx.teacher.id,
-    hasFeedback: !!(b.feedback && b.feedback.text),
+    hasFeedback: hasFb(b),
     fixed: !!b.seriesId,
   };
 }
@@ -297,6 +303,30 @@ function removeBooking(b) {
   promoteWaitlist(b.date, b.lesson);
 }
 
+/* ---------- Feedback helpers ---------- */
+
+/** A booking has feedback if it has text or a filled questionnaire. */
+function hasFb(b) { return !!(b.feedback && (b.feedback.text || b.feedback.mode === 'quiz')); }
+
+/** Feedback as shown to a viewer: the private note to the admin only goes to its writer and the admin. */
+function fbFor(b, ctx) {
+  if (!b.feedback) return null;
+  if (ctx && canManage(ctx, b)) return b.feedback;
+  const f = Object.assign({}, b.feedback);
+  delete f.spaceIssue; delete f.spaceIssueDone;
+  return f;
+}
+
+const QUIZ_CHOICES = {
+  achieved: ['yes', 'partly', 'no'],
+  recommend: ['very', 'changes', 'less'],
+  prep: ['none', 'half', 'more'],
+};
+
+function pickList(v, allowed) {
+  return Array.from(new Set((Array.isArray(v) ? v : []).map(x => clean(x, 40)).filter(x => allowed.indexOf(x) >= 0))).slice(0, 12);
+}
+
 /* ---------- AI helpers ---------- */
 
 const aiCalls = new Map();
@@ -346,7 +376,10 @@ function adminData() {
     })),
     waitingCount: db.waitlist.filter(x => x.date >= w.today).length,
     ai: ai.enabled(),
-    feedback: db.bookings.filter(b => b.feedback && b.feedback.text)
+    issues: db.bookings.filter(b => b.feedback && b.feedback.spaceIssue)
+      .map(b => ({ id: b.id, date: b.date, lesson: b.lesson, teacher: b.teacher, className: b.className, text: b.feedback.spaceIssue, done: !!b.feedback.spaceIssueDone }))
+      .sort((a, b) => (Number(a.done) - Number(b.done)) || b.date.localeCompare(a.date)),
+    feedback: db.bookings.filter(hasFb)
       .map(b => Object.assign(publicBooking(b, null), { feedback: b.feedback, canEdit: true }))
       .sort((a, b) => (b.date + b.lesson).localeCompare(a.date + a.lesson)),
   };
@@ -398,6 +431,7 @@ const api = {
         lessonsByDay: lessonsPerDay(), closedDates: closedDatesBetween(w.start, w.end),
         blockedSlots: blockedBetween(w.start, w.end),
         ai: ai.enabled(),
+        quiz: db.settings.quizLists,
       },
       teachers: ctx.admin ? db.teachers.filter(t => t.active).map(t => ({ id: t.id, name: t.name })) : [],
       bookings: weekBookings.map(b => publicBooking(b, ctx)),
@@ -493,7 +527,7 @@ const api = {
     requireAny(ctx);
     const w = windowNow();
     const from = addDays(w.today, -CONFIG.FEEDBACK_DAYS);
-    const has = b => !!(b.feedback && b.feedback.text);
+    const has = hasFb;
     const feed = db.bookings.filter(has);
     const pending = db.bookings.filter(b => !has(b) && b.date <= w.today && b.date >= from && canManage(ctx, b));
     const all = feed.concat(pending);
@@ -502,19 +536,23 @@ const api = {
       const min = all.reduce((m, b) => (b.date < m ? b.date : m), w.today);
       calendar = await getCalendar(addDays(min, -dow(min)), addDays(w.today, 6 - dow(w.today)));
     }
-    const out = b => Object.assign(publicBooking(b, ctx), { feedback: b.feedback || null, canEdit: canManage(ctx, b) });
+    const out = b => Object.assign(publicBooking(b, ctx), { feedback: fbFor(b, ctx), canEdit: canManage(ctx, b) });
     const byDateDesc = (a, b) => (b.date + b.lesson).localeCompare(a.date + a.lesson);
     return {
       today: w.today,
       lessons: lessons(CONFIG.MAX_LESSONS),
       ai: ai.enabled(),
+      quiz: db.settings.quizLists,
       feed: feed.map(out).sort(byDateDesc),
       pending: pending.map(out).sort(byDateDesc),
       calendar,
     };
   },
 
-  /** כתיבה/עריכה של משוב על שיעור שעבר. טקסט ריק מוחק את המשוב. */
+  /**
+   * כתיבה/עריכה של משוב על שיעור שעבר – בשאלון (mode: 'quiz') או בטקסט חופשי (mode: 'text').
+   * req.delete מוחק את המשוב.
+   */
   saveFeedback(ctx, req) {
     requireAny(ctx);
     req = req || {};
@@ -522,20 +560,42 @@ const api = {
     if (!b) fail('השיעור לא נמצא');
     if (!canManage(ctx, b)) fail('רק המורה שלימדה את השיעור יכולה לכתוב עליו משוב');
     if (b.date > windowNow().today) fail('אפשר לכתוב משוב רק אחרי שהשיעור התקיים');
-    const text = cleanMultiline(req.text, 2000);
-    if (!text) {
+    if (req.delete) {
       delete b.feedback;
+      save();
+      return api.getFeedback(ctx);
+    }
+    const lists = db.settings.quizLists;
+    const mode = req.mode === 'quiz' ? 'quiz' : 'text';
+    const engagement = Number(req.engagement);
+    const fb = {
+      mode,
+      engagement: engagement >= 1 && engagement <= 4 ? Math.round(engagement) : null,
+      text: '',
+      spaceIssue: clean(req.spaceIssue, 300),
+    };
+    if (mode === 'quiz') {
+      fb.activities = pickList(req.activities, lists.activities);
+      fb.goals = pickList(req.goals, lists.goals);
+      fb.aids = pickList(req.aids, lists.aids);
+      Object.keys(QUIZ_CHOICES).forEach(k => { fb[k] = QUIZ_CHOICES[k].indexOf(req[k]) >= 0 ? req[k] : null; });
+      fb.highlight = clean(req.highlight, 300);
+      fb.change = clean(req.change, 300);
+      fb.tip = clean(req.tip, 300);
+      if (!fb.activities.length) fail('יש לבחור מה עשינו');
+      if (!fb.engagement) fail('יש לסמן כמה הבנות היו מעורבות');
     } else {
-      const rating = Number(req.rating);
-      const now = new Date().toISOString();
-      const prev = b.feedback;
-      b.feedback = {
-        text,
-        rating: rating >= 1 && rating <= 5 ? Math.round(rating) : null,
-        createdAt: (prev && prev.createdAt) || now,
-        updatedAt: now,
-      };
-      if (prev && prev.tags && prev.text === text) b.feedback.tags = prev.tags;
+      fb.text = cleanMultiline(req.text, 2000);
+      if (!fb.text) fail('יש לכתוב משוב');
+    }
+    const now = new Date().toISOString();
+    const prev = b.feedback;
+    fb.createdAt = (prev && prev.createdAt) || now;
+    fb.updatedAt = now;
+    if (prev && prev.spaceIssue === fb.spaceIssue && prev.spaceIssueDone) fb.spaceIssueDone = prev.spaceIssueDone;
+    b.feedback = fb;
+    if (mode === 'text') {
+      if (prev && prev.tags && prev.text === fb.text) fb.tags = prev.tags;
       else tagInBackground(b);
     }
     save();
@@ -642,6 +702,15 @@ const api = {
       db.settings.endDate = endDate;
     }
     if (req.weeklyLimit !== undefined) db.settings.weeklyLimit = parseLimit(req.weeklyLimit);
+    if (req.quizLists && typeof req.quizLists === 'object') {
+      const next = {};
+      ['activities', 'goals', 'aids'].forEach(k => {
+        const list = Array.from(new Set((Array.isArray(req.quizLists[k]) ? req.quizLists[k] : []).map(x => clean(x, 30)).filter(Boolean))).slice(0, 30);
+        if (!list.length && k !== 'aids') fail('הרשימה לא יכולה להיות ריקה');
+        next[k] = list;
+      });
+      db.settings.quizLists = next;
+    }
     if (req.lessonsPerDay && typeof req.lessonsPerDay === 'object') {
       const next = {};
       CONFIG.SCHOOL_DAYS.forEach(d => {
@@ -782,11 +851,21 @@ const api = {
     return adminData();
   },
 
+  /** סימון בקשת טיפול במרחב כ"טופל" (או החזרה ל"פתוח"). */
+  adminIssueDone(ctx, id, done) {
+    requireAdmin(ctx);
+    const b = db.bookings.find(x => x.id === String(id || ''));
+    if (!b || !b.feedback || !b.feedback.spaceIssue) fail('הבקשה לא נמצאה');
+    b.feedback.spaceIssueDone = done ? new Date().toISOString() : undefined;
+    save();
+    return adminData();
+  },
+
   /** תיוג משובים קיימים שעוד לא תויגו – עד 10 בכל קריאה (הדף קורא שוב עד שנגמר). */
   async adminTagFeedback(ctx) {
     requireAdmin(ctx);
     if (!ai.enabled()) fail('עוזר ה־AI לא מופעל');
-    const todo = db.bookings.filter(b => b.feedback && b.feedback.text && !b.feedback.tags);
+    const todo = db.bookings.filter(b => b.feedback && b.feedback.text && b.feedback.mode !== 'quiz' && !b.feedback.tags);
     let tagged = 0;
     for (const b of todo.slice(0, 10)) {
       const stamp = b.feedback.updatedAt;
