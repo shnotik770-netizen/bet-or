@@ -5,6 +5,7 @@ import Link from "next/link";
 import { saveYoledet } from "@/app/actions";
 import type { FormState } from "@/lib/yoledet-schema";
 import { genderLabel } from "@/lib/labels";
+import ReporterSelect from "./ReporterSelect";
 
 export type InstitutionOption = {
   id: number;
@@ -61,8 +62,6 @@ export default function YoledetForm({
       if (first) setReporterId(String(first.id));
     }
   }
-
-  const withReporters = institutions.filter((i) => i.reporters.length);
 
   return (
     <form action={formAction} className="space-y-5" noValidate>
@@ -140,19 +139,7 @@ export default function YoledetForm({
             </div>
             <div className="mt-4 max-w-sm">
               <label htmlFor="reporterId" className="label">מי דיווח/ה</label>
-              <select id="reporterId" name="reporterId" className="input" value={reporterId} onChange={(e) => setReporterId(e.target.value)}>
-                <option value="">— לא צוין —</option>
-                {withReporters.map((i) => (
-                  <optgroup key={i.id} label={i.name}>
-                    {i.reporters.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                        {r.role ? ` · ${r.role}` : ""}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <ReporterSelect id="reporterId" institutions={institutions} value={reporterId} onChange={setReporterId} />
             </div>
           </>
         )}

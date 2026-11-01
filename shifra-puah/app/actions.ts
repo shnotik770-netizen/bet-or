@@ -77,6 +77,12 @@ export async function saveYoledet(_prev: FormState, formData: FormData): Promise
 /** הוספה מהירה: שם וטלפון בלבד, נשארים באותו דף */
 export async function quickAddYoledet(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
+  // בהוספה מהירה: אם נבחר/ה מדווח/ת – משייכים גם את המוסד שלו/ה
+  const reporterId = Number(formData.get("reporterId"));
+  if (reporterId && !formData.getAll("institutionIds").length) {
+    const rep = await db.reporter.findUnique({ where: { id: reporterId }, select: { institutionId: true } });
+    if (rep) formData.append("institutionIds", String(rep.institutionId));
+  }
   const r = await writeYoledet(null, formData);
   if (r.error) return { ok: false, errors: r.error, values: formValues(formData) };
   revalidateAll();

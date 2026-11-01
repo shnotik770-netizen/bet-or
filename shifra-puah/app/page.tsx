@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { weekSchedule } from "@/lib/schedule";
 import QuickAddForm from "@/components/QuickAddForm";
+import { institutionOptions } from "@/lib/queries";
 import RecentGroups from "@/components/RecentGroups";
 import { recentGroups } from "@/lib/recent";
 import { fmtHebrew, fmtLong, fmtShort, todayIL, toISO, weekStart } from "@/lib/dates";
@@ -12,10 +13,11 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const today = todayIL();
-  const [week, recent, groups] = await Promise.all([
+  const [week, recent, groups, institutions] = await Promise.all([
     weekSchedule(weekStart(today)),
     db.yoledet.findMany({ orderBy: { createdAt: "desc" }, take: 6, include: { institutions: { select: { name: true } } } }),
     recentGroups(),
+    institutionOptions(),
   ]);
   const todayDay = week.find((d) => d.iso === today);
   const todayStops = todayDay?.stops ?? [];
@@ -30,8 +32,8 @@ export default async function HomePage() {
 
       <section className="card border-blush-200 bg-blush-50/60 p-5">
         <h2 className="mb-1 text-lg font-bold text-brand-900">👶 יולדת חדשה</h2>
-        <p className="mb-3 text-sm text-slate-600">שם וטלפון, ולשמור. את השאר אפשר להשלים אחר כך.</p>
-        <QuickAddForm />
+        <p className="mb-3 text-sm text-slate-600">שם וטלפון, ולשמור. את השאר אפשר להשלים אחר כך, או לעבור לטופס המלא.</p>
+        <QuickAddForm institutions={institutions} />
       </section>
 
       <Link href="/volunteers" className="group card relative block overflow-hidden border-brand-700 bg-brand-700 p-6 text-white hover:bg-brand-800">

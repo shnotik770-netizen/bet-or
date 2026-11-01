@@ -2,6 +2,7 @@ import Link from "next/link";
 import PageTitle from "@/components/PageTitle";
 import ConfirmButton from "@/components/ConfirmButton";
 import QuickAddForm from "@/components/QuickAddForm";
+import { institutionOptions } from "@/lib/queries";
 import RecentGroups from "@/components/RecentGroups";
 import { groupLabel, isGroup, recentGroups, RECENT_DAYS } from "@/lib/recent";
 import { db } from "@/lib/db";
@@ -20,7 +21,7 @@ export default async function YoldotPage({ searchParams }: { searchParams: Promi
   const inst = Number(sp.inst) || undefined;
   const today = todayIL();
   const group = isGroup(sp.group) ? sp.group : null;
-  const groups = await recentGroups();
+  const [groups, institutionOpts] = await Promise.all([recentGroups(), institutionOptions()]);
 
   const where: Prisma.YoledetWhereInput = {
     ...(group ? { id: { in: groups[group] } } : {}),
@@ -67,7 +68,7 @@ export default async function YoldotPage({ searchParams }: { searchParams: Promi
 
       <section className="card mb-4 border-blush-200 bg-blush-50/50 p-4">
         <h2 className="mb-2 font-semibold text-brand-900">הוספה מהירה</h2>
-        <QuickAddForm />
+        <QuickAddForm institutions={institutionOpts} />
       </section>
 
       <div className="mb-4">
