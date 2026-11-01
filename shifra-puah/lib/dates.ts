@@ -1,5 +1,4 @@
-import type { Weekday } from "@prisma/client";
-import { WEEKDAYS } from "./labels";
+import { WEEKDAYS, type Weekday } from "./labels";
 
 // כל התאריכים באפליקציה הם "יום קלנדרי" בפורמט YYYY-MM-DD.
 // במסד הם נשמרים כ-@db.Date, ו-Prisma מחזיר אותם כ-Date בחצות UTC.

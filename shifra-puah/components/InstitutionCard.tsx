@@ -35,7 +35,7 @@ export default function InstitutionCard({ inst }: { inst: InstitutionWithReporte
               {!inst.isActive ? <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">לא פעיל</span> : null}
             </div>
             <p className="mt-0.5 text-sm text-slate-500">
-              {inst.yoldotCount} יולדות נרשמו{inst.notes ? ` · ${inst.notes}` : ""}
+              {inst.yoldotCount} יולדות משויכות{inst.notes ? ` · ${inst.notes}` : ""}
             </p>
           </div>
           <div className="flex gap-1">
@@ -57,7 +57,7 @@ export default function InstitutionCard({ inst }: { inst: InstitutionWithReporte
       <div className="mt-4 rounded-xl bg-slate-50 p-3">
         <h3 className="mb-2 text-sm font-semibold text-slate-700">מדווחים</h3>
         {inst.reporters.length === 0 ? (
-          <p className="text-sm text-slate-400">עדיין אין מדווחים. צריך לפחות אחד/ת כדי לרשום יולדות מהמוסד.</p>
+          <p className="text-sm text-slate-400">עדיין אין מדווח/ת קבוע/ה.</p>
         ) : (
           <ul className="divide-y divide-slate-200/70">
             {inst.reporters.map((r) => (

@@ -1,11 +1,18 @@
-/** כתובת מלאה בשורה אחת */
-export function fullAddress(y: { street: string; houseNumber: string; apartment?: string | null; city: string }) {
-  return `${y.street} ${y.houseNumber}${y.apartment ? `, ${y.apartment}` : ""}, ${y.city}`;
+type Addr = { street: string | null; houseNumber: string | null; apartment?: string | null; city: string | null };
+
+export function hasAddress(y: Addr) {
+  return !!y.street;
+}
+
+/** כתובת מלאה בשורה אחת, או "" אם אין */
+export function fullAddress(y: Addr) {
+  if (!y.street) return "";
+  return [`${y.street}${y.houseNumber ? ` ${y.houseNumber}` : ""}`, y.apartment, y.city].filter(Boolean).join(", ");
 }
 
 /** קישור לניווט בוויז */
-export function wazeLink(y: { street: string; houseNumber: string; city: string }) {
-  return `https://waze.com/ul?q=${encodeURIComponent(`${y.street} ${y.houseNumber} ${y.city}`)}&navigate=yes`;
+export function wazeLink(y: Addr) {
+  return `https://waze.com/ul?q=${encodeURIComponent([y.street, y.houseNumber, y.city].filter(Boolean).join(" "))}&navigate=yes`;
 }
 
 /** טלפון לתצוגה: 050-1234567 */

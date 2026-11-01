@@ -6,9 +6,10 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { toDate } from "@/lib/dates";
-import { yoledetSchema, type FormState } from "@/lib/yoledet-schema";
-import { AUTH_COOKIE, passwordToken } from "@/lib/auth";
+import { isISODate, toDate, weekdayOf } from "@/lib/dates";
+import { addressSchema, optionalText, yoledetSchema, type FormState } from "@/lib/yoledet-schema";
+import { AUTH_COOKIE, roleToken } from "@/lib/auth";
+import { requireAdmin, requireSignedIn } from "@/lib/session";
 
 function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
@@ -24,7 +25,7 @@ function formValues(formData: FormData): Record<string, string | string[]> {
   for (const key of new Set(formData.keys())) {
     if (key.startsWith("$")) continue;
     const all = formData.getAll(key).map(String);
-    out[key] = key === "serviceDays" ? all : all[0];
+    out[key] = key === "institutionIds" ? all : all[0];
   }
   return out;
 }
@@ -35,40 +36,100 @@ function revalidateAll() {
 
 /* ---------- יולדות ---------- */
 
-export async function saveYoledet(_prev: FormState, formData: FormData): Promise<FormState> {
-  const raw = Object.fromEntries(formData);
-  const parsed = yoledetSchema.safeParse({ ...raw, serviceDays: formData.getAll("serviceDays") });
-  if (!parsed.success) {
-    return { ok: false, message: "יש שדות שצריך לתקן", errors: fieldErrors(parsed.error), values: formValues(formData) };
-  }
-  const v = parsed.data;
+/** אם הוזן רחוב בלי עיר – עפולה */
+function withDefaultCity(a: { street: string | null; city: string | null }) {
+  return a.city ?? (a.street ? "עפולה" : null);
+}
 
-  // המדווח/ת חייב/ת להיות שייך/ת למוסד שנבחר
-  const reporter = await db.reporter.findUnique({ where: { id: v.reporterId } });
-  if (!reporter || reporter.institutionId !== v.institutionId) {
-    return { ok: false, message: "יש שדות שצריך לתקן", errors: { reporterId: "המדווח/ת לא שייך/ת למוסד שנבחר" }, values: formValues(formData) };
-  }
+function yoledetData(formData: FormData) {
+  return yoledetSchema.safeParse({
+    ...Object.fromEntries(formData),
+    institutionIds: formData.getAll("institutionIds"),
+  });
+}
 
+async function writeYoledet(id: number | null, formData: FormData) {
+  const parsed = yoledetData(formData);
+  if (!parsed.success) return { error: fieldErrors(parsed.error) };
+  const { institutionIds, birthDate, ...v } = parsed.data;
   const data = {
     ...v,
-    birthDate: toDate(v.birthDate),
-    serviceStartDate: toDate(v.serviceStartDate),
-    serviceEndDate: toDate(v.serviceEndDate),
+    city: withDefaultCity(v),
+    birthDate: birthDate ? toDate(birthDate) : null,
+    institutions: { set: institutionIds.map((iid) => ({ id: iid })) },
   };
+  const y = id
+    ? await db.yoledet.update({ where: { id }, data })
+    : await db.yoledet.create({ data: { ...data, institutions: { connect: data.institutions.set } } });
+  return { yoledet: y };
+}
 
+/** טופס יולדת מלא (הוספה או עריכה) */
+export async function saveYoledet(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
   const id = Number(formData.get("id")) || null;
-  if (id) {
-    await db.yoledet.update({ where: { id }, data });
-  } else {
-    await db.yoledet.create({ data });
-  }
+  const r = await writeYoledet(id, formData);
+  if (r.error) return { ok: false, message: "יש שדות שצריך לתקן", errors: r.error, values: formValues(formData) };
   revalidateAll();
-  redirect(`/yoldot?saved=${encodeURIComponent(v.fullName)}`);
+  redirect(`/yoldot?saved=${r.yoledet!.id}`);
+}
+
+/** הוספה מהירה: שם וטלפון בלבד, נשארים באותו דף */
+export async function quickAddYoledet(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const r = await writeYoledet(null, formData);
+  if (r.error) return { ok: false, errors: r.error, values: formValues(formData) };
+  revalidateAll();
+  return { ok: true, message: `${r.yoledet!.fullName} נוספה`, values: { id: String(r.yoledet!.id) } };
 }
 
 export async function deleteYoledet(formData: FormData) {
+  await requireAdmin();
   const id = Number(formData.get("id"));
   if (id) await db.yoledet.delete({ where: { id } }).catch(() => null);
+  revalidateAll();
+}
+
+/** עדכון כתובת – פתוח גם למתנדבות */
+export async function updateAddress(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireSignedIn();
+  const id = Number(formData.get("id"));
+  const parsed = addressSchema.safeParse(Object.fromEntries(formData));
+  if (!id || !parsed.success) return { ok: false, message: "לא הצלחנו לשמור" };
+  await db.yoledet.update({ where: { id }, data: { ...parsed.data, city: withDefaultCity(parsed.data) } });
+  revalidateAll();
+  return { ok: true, message: "הכתובת עודכנה" };
+}
+
+/* ---------- שיבוץ בסדר היום ---------- */
+
+const visitSchema = z.object({
+  yoledetId: z.coerce.number().int().positive({ message: "נא לבחור יולדת" }),
+  date: z
+    .string()
+    .refine(isISODate, "נא לבחור תאריך")
+    .refine((d) => weekdayOf(d) !== null, "זה יום שבת – ארוחות שבת משבצים ביום שישי"),
+  note: optionalText(200),
+});
+
+export async function addVisit(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const parsed = visitSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
+  const { yoledetId, date, note } = parsed.data;
+  await db.visit.upsert({
+    where: { yoledetId_date: { yoledetId, date: toDate(date) } },
+    update: { note },
+    create: { yoledetId, date: toDate(date), note },
+  });
+  revalidateAll();
+  return { ok: true, message: "שובץ" };
+}
+
+export async function deleteVisit(formData: FormData) {
+  await requireAdmin();
+  const id = Number(formData.get("id"));
+  if (id) await db.visit.delete({ where: { id } }).catch(() => null);
   revalidateAll();
 }
 
@@ -86,6 +147,7 @@ const institutionSchema = z.object({
 });
 
 export async function saveInstitution(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
   const parsed = institutionSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
   const id = Number(formData.get("id")) || null;
@@ -103,6 +165,7 @@ export async function saveInstitution(_prev: FormState, formData: FormData): Pro
 }
 
 export async function toggleInstitution(formData: FormData) {
+  await requireAdmin();
   const id = Number(formData.get("id"));
   const inst = await db.institution.findUnique({ where: { id } });
   if (inst) await db.institution.update({ where: { id }, data: { isActive: !inst.isActive } });
@@ -110,9 +173,10 @@ export async function toggleInstitution(formData: FormData) {
 }
 
 export async function deleteInstitution(formData: FormData) {
+  await requireAdmin();
   const id = Number(formData.get("id"));
-  // מחיקה רק כשאין יולדות רשומות תחת המוסד; אחרת מסמנים "לא פעיל"
-  const count = await db.yoledet.count({ where: { institutionId: id } });
+  // מחיקה רק כשאין יולדות משויכות למוסד; אחרת מסמנים "לא פעיל"
+  const count = await db.yoledet.count({ where: { institutions: { some: { id } } } });
   if (count === 0) {
     await db.$transaction([
       db.reporter.deleteMany({ where: { institutionId: id } }),
@@ -142,6 +206,7 @@ const reporterSchema = z.object({
 });
 
 export async function saveReporter(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
   const parsed = reporterSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
   try {
@@ -157,6 +222,7 @@ export async function saveReporter(_prev: FormState, formData: FormData): Promis
 }
 
 export async function toggleReporter(formData: FormData) {
+  await requireAdmin();
   const id = Number(formData.get("id"));
   const r = await db.reporter.findUnique({ where: { id } });
   if (r) await db.reporter.update({ where: { id }, data: { isActive: !r.isActive } });
@@ -164,6 +230,7 @@ export async function toggleReporter(formData: FormData) {
 }
 
 export async function deleteReporter(formData: FormData) {
+  await requireAdmin();
   const id = Number(formData.get("id"));
   const count = await db.yoledet.count({ where: { reporterId: id } });
   if (count === 0) await db.reporter.delete({ where: { id } }).catch(() => null);
@@ -173,17 +240,19 @@ export async function deleteReporter(formData: FormData) {
 /* ---------- כניסה ---------- */
 
 export async function login(_prev: FormState, formData: FormData): Promise<FormState> {
-  const expected = process.env.APP_PASSWORD;
   const given = String(formData.get("password") ?? "");
-  if (!expected || given !== expected) return { ok: false, message: "סיסמה שגויה" };
-  const jar = await cookies();
-  jar.set(AUTH_COOKIE, await passwordToken(expected), {
+  const admin = process.env.APP_PASSWORD;
+  const vol = process.env.VOLUNTEER_PASSWORD;
+  const role = admin && given === admin ? "admin" : vol && given === vol ? "volunteer" : null;
+  if (!role) return { ok: false, message: "סיסמה שגויה" };
+  (await cookies()).set(AUTH_COOKIE, await roleToken(role, given), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 90,
+    maxAge: 60 * 60 * 24 * 180,
   });
+  if (role === "volunteer") redirect("/volunteers");
   const next = String(formData.get("next") ?? "/");
   redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
 }

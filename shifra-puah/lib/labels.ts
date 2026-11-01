@@ -1,4 +1,6 @@
-import type { BabyGender, HelpType, InstitutionType, Weekday } from "@prisma/client";
+import type { BabyGender, InstitutionType } from "@prisma/client";
+
+export type Weekday = "SUNDAY" | "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY";
 
 export const WEEKDAYS: Weekday[] = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
 
@@ -24,12 +26,6 @@ export const genderLabel: Record<BabyGender, string> = {
   BOY: "בן",
   GIRL: "בת",
   TWINS: "תאומים",
-};
-
-export const helpTypeLabel: Record<HelpType, string> = {
-  MEAL: "ארוחה",
-  HELP: "סיוע בבית",
-  BOTH: "ארוחה + סיוע",
 };
 
 export const institutionTypeLabel: Record<InstitutionType, string> = {

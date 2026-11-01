@@ -17,7 +17,7 @@ export default async function InstitutionsPage() {
 
   return (
     <div>
-      <PageTitle title="מוסדות ומדווחים" subtitle="כל יולדת נרשמת תחת מוסד ותחת המדווח/ת מאותו מוסד. מוסד או מדווח/ת עם דיווחים אי אפשר למחוק, רק להשבית." />
+      <PageTitle title="מוסדות ומדווחים" subtitle="לכל מוסד יש מדווח/ת קבוע/ה, שנבחר/ת אוטומטית כשמסמנים את המוסד בטופס. יולדת יכולה להיות משויכת לכמה מוסדות." />
       <section className="card mb-6 border-gold-200 bg-gold-50/40 p-5">
         <h2 className="mb-3 font-semibold text-brand-900">הוספת מוסד</h2>
         <InstitutionForm />

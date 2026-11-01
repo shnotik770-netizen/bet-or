@@ -1,17 +1,15 @@
 import YoledetForm from "@/components/YoledetForm";
-import { institutionOptions } from "@/lib/queries";
-import { addDays, todayIL } from "@/lib/dates";
 import PageTitle from "@/components/PageTitle";
+import { institutionOptions } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "רישום יולדת · שפרה ופועה" };
+export const metadata = { title: "יולדת חדשה · שפרה ופועה" };
 
 export default async function NewYoledetPage() {
   const institutions = await institutionOptions();
-  const today = todayIL();
   return (
     <div className="mx-auto max-w-3xl">
-      <PageTitle title="רישום יולדת חדשה" subtitle="מזל טוב! ממלאים את הפרטים, והכתובת תופיע אוטומטית בסדר היום של המתנדבות." />
+      <PageTitle title="יולדת חדשה" subtitle="מזל טוב! מספיק שם וטלפון." />
       <YoledetForm
         institutions={institutions}
         initial={{
@@ -22,15 +20,12 @@ export default async function NewYoledetPage() {
           apartment: "",
           city: "עפולה",
           addressNotes: "",
-          institutionId: "",
+          institutionIds: [],
           reporterId: "",
-          birthDate: today,
+          birthDate: "",
           babyGender: "",
+          preferences: "",
           notes: "",
-          serviceStartDate: today,
-          serviceEndDate: addDays(today, 13),
-          serviceDays: ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY"],
-          helpType: "MEAL",
         }}
       />
     </div>

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import Link from "next/link";
 import { logout } from "./actions";
+import { currentRole } from "@/lib/session";
+import { authEnabled } from "@/lib/auth";
 import "./globals.css";
 
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo", display: "swap" });
@@ -13,19 +15,20 @@ export const metadata: Metadata = {
 
 const nav = [
   { href: "/", label: "ראשי" },
-  { href: "/yoldot/new", label: "רישום יולדת" },
   { href: "/yoldot", label: "יולדות" },
   { href: "/volunteers", label: "סדר יום מתנדבות" },
   { href: "/institutions", label: "מוסדות ומדווחים" },
 ];
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const role = await currentRole();
+  const links = role === "admin" ? nav : role === "volunteer" ? nav.filter((n) => n.href === "/volunteers") : [];
   return (
     <html lang="he" dir="rtl" className={heebo.variable}>
       <body className="min-h-dvh">
         <header className="no-print border-b border-brand-800 bg-brand-700 text-white">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-            <Link href="/" className="flex items-center gap-3">
+            <Link href={role === "volunteer" ? "/volunteers" : "/"} className="flex items-center gap-3">
               <span className="grid size-10 place-items-center rounded-xl bg-white/10 ring-1 ring-white/20">
                 <svg viewBox="0 0 24 24" className="size-6" aria-hidden>
                   <path
@@ -40,13 +43,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </Link>
             <nav className="flex flex-1 flex-wrap items-center gap-1 text-sm">
-              {nav.map((n) => (
+              {links.map((n) => (
                 <Link key={n.href} href={n.href} className="rounded-lg px-3 py-1.5 text-brand-50 hover:bg-white/10">
                   {n.label}
                 </Link>
               ))}
             </nav>
-            {process.env.APP_PASSWORD ? (
+            {authEnabled() && role ? (
               <form action={logout}>
                 <button className="rounded-lg px-3 py-1.5 text-sm text-brand-100 hover:bg-white/10">יציאה</button>
               </form>

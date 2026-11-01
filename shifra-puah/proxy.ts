@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_COOKIE, passwordToken } from "@/lib/auth";
+import { AUTH_COOKIE, roleFromToken, volunteerMayOpen } from "@/lib/auth";
 
-// אם הוגדרה APP_PASSWORD, כל האתר דורש כניסה
 export async function proxy(req: NextRequest) {
-  const password = process.env.APP_PASSWORD;
-  if (!password) return NextResponse.next();
-  const token = req.cookies.get(AUTH_COOKIE)?.value;
-  if (token && token === (await passwordToken(password))) return NextResponse.next();
-  const url = req.nextUrl.clone();
-  url.pathname = "/login";
-  url.search = `?next=${encodeURIComponent(req.nextUrl.pathname + req.nextUrl.search)}`;
+  const role = await roleFromToken(req.cookies.get(AUTH_COOKIE)?.value);
+  const { pathname, search } = req.nextUrl;
+  if (role === "admin") return NextResponse.next();
+  if (role === "volunteer") {
+    if (volunteerMayOpen(pathname)) return NextResponse.next();
+    return NextResponse.redirect(new URL("/volunteers", req.url));
+  }
+  const url = new URL("/login", req.url);
+  url.searchParams.set("next", pathname + search);
   return NextResponse.redirect(url);
 }
 
