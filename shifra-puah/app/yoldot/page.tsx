@@ -2,6 +2,8 @@ import Link from "next/link";
 import PageTitle from "@/components/PageTitle";
 import ConfirmButton from "@/components/ConfirmButton";
 import QuickAddForm from "@/components/QuickAddForm";
+import RecentGroups from "@/components/RecentGroups";
+import { groupLabel, isGroup, recentGroups, RECENT_DAYS } from "@/lib/recent";
 import { db } from "@/lib/db";
 import { deleteYoledet } from "@/app/actions";
 import { fmtShort, toDate, todayIL, toISO } from "@/lib/dates";
@@ -12,13 +14,16 @@ import type { Prisma } from "@prisma/client";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "יולדות · שפרה ופועה" };
 
-export default async function YoldotPage({ searchParams }: { searchParams: Promise<{ q?: string; inst?: string; saved?: string }> }) {
+export default async function YoldotPage({ searchParams }: { searchParams: Promise<{ q?: string; inst?: string; saved?: string; group?: string }> }) {
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const inst = Number(sp.inst) || undefined;
   const today = todayIL();
+  const group = isGroup(sp.group) ? sp.group : null;
+  const groups = await recentGroups();
 
   const where: Prisma.YoledetWhereInput = {
+    ...(group ? { id: { in: groups[group] } } : {}),
     ...(inst ? { institutions: { some: { id: inst } } } : {}),
     ...(q
       ? {
@@ -34,11 +39,13 @@ export default async function YoldotPage({ searchParams }: { searchParams: Promi
   const [yoldot, institutions, saved] = await Promise.all([
     db.yoledet.findMany({
       where,
-      orderBy: [{ createdAt: "desc" }],
+      // בקבוצה: מי שילדה מוקדם יותר קודם (מחכה הכי הרבה זמן)
+      orderBy: group ? [{ birthDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }] : [{ createdAt: "desc" }],
       include: {
         institutions: { select: { name: true }, orderBy: { name: "asc" } },
         reporter: { select: { name: true } },
         visits: { where: { date: { gte: toDate(today) } }, orderBy: { date: "asc" }, select: { date: true } },
+        _count: { select: { visits: true } },
       },
       take: 300,
     }),
@@ -63,7 +70,21 @@ export default async function YoldotPage({ searchParams }: { searchParams: Promi
         <QuickAddForm />
       </section>
 
+      <div className="mb-4">
+        <RecentGroups counts={{ none: groups.none.length, once: groups.once.length, multi: groups.multi.length }} active={group} />
+      </div>
+
+      {group ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-4 py-2.5 text-sm shadow-sm ring-1 ring-slate-200/70">
+          <span>
+            מוצגות: ילדו ב-{RECENT_DAYS} הימים האחרונים ו<strong>{groupLabel[group]}</strong>, מי שילדה מוקדם יותר קודם
+          </span>
+          <Link href="/yoldot" className="text-brand-700 hover:underline">הצגת כולן</Link>
+        </div>
+      ) : null}
+
       <form className="mb-4 flex flex-wrap items-end gap-2" role="search">
+        {group ? <input type="hidden" name="group" value={group} /> : null}
         <input name="q" defaultValue={q} className="input min-w-48 flex-1" placeholder="חיפוש לפי שם, טלפון או רחוב" aria-label="חיפוש" />
         <select name="inst" defaultValue={inst ?? ""} className="input w-auto" aria-label="מוסד">
           <option value="">כל המוסדות</option>
@@ -114,8 +135,13 @@ export default async function YoldotPage({ searchParams }: { searchParams: Promi
                     </>
                   ) : null}
                   <dt className="text-slate-500">שיבוצים</dt>
-                  <dd className={y.visits.length ? "" : "text-slate-400"}>
-                    {y.visits.length ? y.visits.slice(0, 6).map((v) => fmtShort(toISO(v.date))).join(", ") + (y.visits.length > 6 ? "…" : "") : "אין שיבוצים קרובים"}
+                  <dd>
+                    <span className={"me-2 rounded-full px-2 py-0.5 text-xs font-medium " + (y._count.visits === 0 ? "bg-blush-50 text-blush-700" : y._count.visits === 1 ? "bg-gold-50 text-gold-700" : "bg-brand-50 text-brand-800")}>
+                      {y._count.visits === 0 ? "לא שובצה" : y._count.visits === 1 ? "פעם אחת" : `${y._count.visits} פעמים`}
+                    </span>
+                    {y.visits.length ? (
+                      <span className="text-slate-600">קרובים: {y.visits.slice(0, 5).map((v) => fmtShort(toISO(v.date))).join(", ") + (y.visits.length > 5 ? "…" : "")}</span>
+                    ) : null}
                   </dd>
                 </dl>
                 <div className="mt-auto flex justify-end gap-1 pt-3">

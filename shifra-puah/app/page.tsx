@@ -2,7 +2,9 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { weekSchedule } from "@/lib/schedule";
 import QuickAddForm from "@/components/QuickAddForm";
-import { fmtHebrew, fmtLong, fmtShort, toDate, todayIL, toISO, weekStart } from "@/lib/dates";
+import RecentGroups from "@/components/RecentGroups";
+import { recentGroups } from "@/lib/recent";
+import { fmtHebrew, fmtLong, fmtShort, todayIL, toISO, weekStart } from "@/lib/dates";
 import { genderLabel, weekdayLabel } from "@/lib/labels";
 import { fullAddress } from "@/lib/format";
 
@@ -10,12 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const today = todayIL();
-  const monthStart = today.slice(0, 8) + "01";
-  const [week, monthBirths, recent, unscheduled] = await Promise.all([
+  const [week, recent, groups] = await Promise.all([
     weekSchedule(weekStart(today)),
-    db.yoledet.count({ where: { birthDate: { gte: toDate(monthStart) } } }),
     db.yoledet.findMany({ orderBy: { createdAt: "desc" }, take: 6, include: { institutions: { select: { name: true } } } }),
-    db.yoledet.count({ where: { createdAt: { gte: toDate(monthStart) }, visits: { none: {} } } }),
+    recentGroups(),
   ]);
   const todayDay = week.find((d) => d.iso === today);
   const todayStops = todayDay?.stops ?? [];
@@ -56,10 +56,7 @@ export default async function HomePage() {
         </div>
       </Link>
 
-      <section className="grid grid-cols-2 gap-3">
-        <StatCard href="/yoldot" value={monthBirths} label="לידות החודש" />
-        <StatCard href="/yoldot" value={unscheduled} label="נרשמו החודש ועוד לא שובצו" highlight={unscheduled > 0} />
-      </section>
+      <RecentGroups counts={{ none: groups.none.length, once: groups.once.length, multi: groups.multi.length }} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="card p-5">
@@ -105,14 +102,5 @@ export default async function HomePage() {
         </div>
       </section>
     </div>
-  );
-}
-
-function StatCard({ href, value, label, highlight }: { href: string; value: number; label: string; highlight?: boolean }) {
-  return (
-    <Link href={href} className={"card px-4 py-4 text-center hover:border-brand-300 " + (highlight ? "border-gold-200 bg-gold-50" : "")}>
-      <div className={"text-3xl font-bold " + (highlight ? "text-gold-700" : "text-brand-800")}>{value}</div>
-      <div className="text-xs text-slate-500 sm:text-sm">{label}</div>
-    </Link>
   );
 }
