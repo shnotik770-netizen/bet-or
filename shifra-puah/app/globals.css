@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-heebo), "Heebo", system-ui, sans-serif;
+
+  /* כחול-טורקיז עמוק – הצבע המוביל */
+  --color-brand-50: #eef8f8;
+  --color-brand-100: #d5eeee;
+  --color-brand-200: #addcdd;
+  --color-brand-300: #7cc3c6;
+  --color-brand-400: #4aa3a8;
+  --color-brand-500: #2f878d;
+  --color-brand-600: #236d74;
+  --color-brand-700: #1f5960;
+  --color-brand-800: #1d4a50;
+  --color-brand-900: #1b3f44;
+  --color-brand-950: #0c2629;
+
+  /* ורוד רך */
+  --color-blush-50: #fdf4f5;
+  --color-blush-100: #fbe8eb;
+  --color-blush-200: #f6d2d8;
+  --color-blush-400: #e598a5;
+  --color-blush-600: #c25d6f;
+  --color-blush-700: #a24a5b;
+
+  /* זהב רך */
+  --color-gold-50: #fdf9ef;
+  --color-gold-100: #f9f0d6;
+  --color-gold-200: #f1dfab;
+  --color-gold-400: #d9b665;
+  --color-gold-600: #a9842f;
+  --color-gold-700: #8a6a25;
+
+  --color-cream: #faf8f4;
+}
+
+@layer base {
+  body {
+    @apply bg-cream text-slate-800 antialiased;
+  }
+  input,
+  select,
+  textarea {
+    @apply text-base;
+  }
+}
+
+@utility card {
+  @apply rounded-2xl border border-slate-200/70 bg-white shadow-sm;
+}
+@utility input {
+  @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400
+    focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none
+    disabled:bg-slate-50 disabled:text-slate-400;
+  &[aria-invalid="true"] {
+    @apply border-blush-400 focus:ring-blush-100;
+  }
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-medium text-slate-700;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-medium transition
+    focus-visible:ring-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60;
+}
+@utility btn-primary {
+  @apply btn bg-brand-700 text-white shadow-sm hover:bg-brand-800 focus-visible:ring-brand-200;
+}
+@utility btn-secondary {
+  @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-brand-100;
+}
+@utility btn-ghost {
+  @apply btn px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100;
+}
+@utility btn-danger {
+  @apply btn px-3 py-1.5 text-sm text-blush-700 hover:bg-blush-50;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}

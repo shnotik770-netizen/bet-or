@@ -1,0 +1,117 @@
+// סכמת מסד הנתונים – שפרה ופועה, מוסדות חב"ד עפולה
+// PostgreSQL על Railway. החיבור דרך DATABASE_URL (Railway מספק אותו אוטומטית).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// סוג המוסד
+enum InstitutionType {
+  KINDERGARTEN  // גן
+  TALMUD_TORAH  // תלמוד תורה
+  GIRLS_SCHOOL  // בית ספר לבנות
+  CHABAD_HOUSE  // בית חב"ד
+  OTHER         // אחר
+}
+
+/// מין הנולד/ת
+enum BabyGender {
+  BOY    // בן
+  GIRL   // בת
+  TWINS  // תאומים
+}
+
+/// ימי השבוע שבהם המתנדבות מגיעות (שבת לא כלולה; ארוחות שבת מגיעות ביום שישי)
+enum Weekday {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+/// סוג הסיוע שהמתנדבות מביאות
+enum HelpType {
+  MEAL  // ארוחה
+  HELP  // סיוע בבית
+  BOTH  // ארוחה וסיוע
+}
+
+/// מוסד: גן, תלמוד תורה, בית חב"ד וכו'
+model Institution {
+  id        Int             @id @default(autoincrement())
+  name      String          @unique
+  type      InstitutionType @default(OTHER)
+  isActive  Boolean         @default(true)
+  notes     String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  reporters Reporter[]
+  yoldot    Yoledet[]
+
+  @@map("institutions")
+}
+
+/// מדווח/ת: המנהל/ת או הנציג/ה של המוסד שמדווח/ת על לידות
+model Reporter {
+  id            Int         @id @default(autoincrement())
+  name          String
+  phone         String?
+  role          String?     // לדוגמה: מנהלת, גננת, מזכירה
+  isActive      Boolean     @default(true)
+  institutionId Int
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  yoldot Yoledet[]
+
+  @@unique([institutionId, name])
+  @@index([institutionId])
+  @@map("reporters")
+}
+
+/// יולדת
+model Yoledet {
+  id       Int     @id @default(autoincrement())
+  fullName String
+  phone    String
+
+  // כתובת מלאה (מפוצלת כדי שאפשר יהיה למיין מסלול לפי רחוב)
+  street       String
+  houseNumber  String
+  apartment    String? // דירה / קומה / כניסה
+  city         String  @default("עפולה")
+  addressNotes String? // הכוונה לכתובת, קוד לבניין וכו'
+
+  // המוסד שבו לומדים הילדים, והמדווח/ת מאותו מוסד
+  institutionId Int
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  reporterId    Int
+  reporter      Reporter    @relation(fields: [reporterId], references: [id], onDelete: Restrict)
+
+  birthDate  DateTime   @db.Date // תאריך הלידה
+  babyGender BabyGender
+  notes      String?
+
+  // סידור המתנדבות: באיזו תקופה ובאילו ימים מגיעים
+  serviceStartDate DateTime  @db.Date
+  serviceEndDate   DateTime  @db.Date
+  serviceDays      Weekday[]
+  helpType         HelpType  @default(MEAL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceStartDate, serviceEndDate])
+  @@index([institutionId])
+  @@index([reporterId])
+  @@map("yoldot")
+}
