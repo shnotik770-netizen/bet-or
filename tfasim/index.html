@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>טפסי הגן</title>
+<style>
+:root{
+  --bg:#eef1ee; --ink:#1d2622; --muted:#5d6b64; --line:#c9d2cc;
+  --paper:#fff; --accent:#1f6f5c; --accent-ink:#fff; --soft:#e3efe9;
+  --fill:#f4faf7; --danger:#a63a2b; --rule:#222;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Assistant","Heebo","Rubik","Segoe UI","Arial Hebrew",Arial,sans-serif;font-size:16px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.bar{position:sticky;top:0;z-index:5;background:var(--accent);color:var(--accent-ink);
+  display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap}
+.bar h1{font-size:19px;margin:0;font-weight:700;flex:1;min-width:0}
+.bar button{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.35);
+  border-radius:8px;padding:7px 13px}
+.bar button.main{background:#fff;color:var(--accent);font-weight:700;border-color:#fff}
+.bar .saved{font-size:13px;opacity:.85}
+main{max-width:900px;margin:0 auto;padding:16px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{font-size:17px;margin:0 0 4px}
+.muted{color:var(--muted);font-size:14px}
+.privacy{background:var(--soft);border-color:#bcd8cc;font-size:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row .grow{flex:1;min-width:0}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.btn.small{padding:5px 11px;font-size:14px;font-weight:500}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.list{list-style:none;margin:10px 0 0;padding:0}
+.list li{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line)}
+.list li .grow{flex:1;min-width:150px}
+.list b{font-weight:600}
+.set label{display:block;font-size:14px;color:var(--muted);margin-top:10px}
+.set input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+
+/* ---- הדף עצמו: נראה כמו הטופס המודפס ---- */
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.tools select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;max-width:100%}
+.paper{background:#fff;color:#000;border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.08);
+  padding:34px 40px 44px;font-family:"David","David Libre","Frank Ruehl CLM","Times New Roman",serif;font-size:17px;line-height:1.55}
+.paper .org{font-size:13px;color:#444;min-height:20px}
+.paper h2.title{font-size:23px;font-weight:700;margin:14px 0 0}
+.paper .sub{font-size:14px;margin:0 0 22px}
+.paper .intro p{margin:0}
+.paper .intro{margin-bottom:22px}
+.ft{width:100%;border-collapse:collapse;margin:0 0 26px;table-layout:fixed}
+.ft td{border:1.5px solid var(--rule);padding:0;vertical-align:top}
+.cell{display:flex;align-items:baseline;gap:6px;padding:4px 8px;min-height:34px}
+.cell>span{white-space:nowrap}
+.ft.bold .cell>span{font-weight:700;font-style:italic}
+.paper input.in,.paper textarea.in{flex:1;min-width:0;width:100%;border:0;border-radius:3px;
+  background:var(--fill);padding:2px 6px;font-family:Arial,"Segoe UI",sans-serif;font-size:16px;color:#0b2a6b}
+.paper textarea.in{display:block;resize:none;overflow:hidden;min-height:34px;line-height:1.6;
+  background-image:linear-gradient(transparent calc(1.6em - 1px),#999 calc(1.6em - 1px));background-size:100% 1.6em;
+  background-color:var(--fill);padding:0 6px}
+.paper .in:focus{outline:2px solid var(--accent);outline-offset:0;background-color:#fff}
+.q{margin:0 0 20px}
+.q>.ql{display:block}
+.q.inline{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.q.inline .in{flex:1;min-width:160px;border-bottom:1px solid #666;border-radius:0}
+.q .hint{font-size:14px;color:#333}
+.opts{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:6px;font-weight:700}
+.opt{background:none;border:2px solid transparent;border-radius:50%/60%;padding:2px 12px;font:inherit;font-weight:700;color:#000}
+.opt[aria-pressed="true"]{border-color:#0b2a6b;color:#0b2a6b}
+.opt:focus-visible{outline:2px solid var(--accent)}
+.pv{display:none}
+.sec{font-weight:700;font-style:italic;text-decoration:underline;margin:26px 0 6px}
+.todo{border:1.5px dashed #b58a00;background:#fff8dc;padding:10px 12px;font-family:Arial,sans-serif;font-size:14px;margin-top:26px}
+
+dialog{border:0;border-radius:14px;padding:22px;max-width:min(480px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{margin:0 0 8px;font-size:19px}
+dialog p{margin:0 0 10px}
+@media (max-width:640px){
+  main{padding:10px}
+  .paper{padding:18px 14px 26px;font-size:16px}
+  .ft,.ft tbody,.ft tr,.ft td{display:block;width:100%}
+  .ft td{margin-top:-1.5px}
+  .ft td.empty{display:none}
+  .cell{flex-wrap:wrap}
+  .cell>span{white-space:normal}
+  .grid2{grid-template-columns:1fr}
+  .bar{padding:8px 10px}
+  .bar.fill h1{display:none}
+  .bar.fill .saved{flex:1}
+}
+@page{size:A4;margin:14mm}
+@media print{
+  body{background:#fff}
+  .bar,.tools,.todo,.noprint,dialog{display:none!important}
+  main{max-width:none;padding:0}
+  .paper{border:0;box-shadow:none;padding:0;font-size:12.5pt}
+  .paper .in{background-color:transparent!important;color:#000!important;font-size:12pt}
+  .ft tr,.q.inline,.opts{break-inside:avoid}
+  .paper input[type=date],.paper textarea{display:none!important}
+  .pv{display:block;flex:1;font-family:Arial,sans-serif;font-size:12pt}
+  .pv.lines{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6em;
+    background:repeating-linear-gradient(transparent 0 calc(1.6em - 1px),#777 calc(1.6em - 1px) 1.6em);
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .opts{gap:4px 10px}
+  .opt[aria-pressed="true"]{border-color:#000;color:#000}
+}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<main id="app"></main>
+<dialog id="leave" aria-labelledby="leaveT">
+  <h2 id="leaveT">הטופס נשמר במכשיר הזה</h2>
+  <p>מה שמילאת נשמר רק בדפדפן של המכשיר הזה, ולא נשלח לאף מקום. אפשר לחזור אליו מהרשימה "טפסים שמולאו" ולהמשיך.</p>
+  <p>הטופס יישמר כאן <b><span id="keepDays"></span> יום</b> מהעריכה האחרונה, ואז יימחק אוטומטית. כדי לשמור אותו לאורך זמן – "שמירה כ-PDF".</p>
+  <p class="muted">במחשב משותף: מי שייכנס לאתר מהדפדפן הזה יראה את הטופס. אפשר למחוק אותו עכשיו.</p>
+  <div class="row">
+    <button class="btn" data-act="leaveOk">הבנתי, יציאה</button>
+    <button class="btn ghost" data-act="stay">המשך מילוי</button>
+    <button class="btn danger" data-act="leaveDel">מחיקה ויציאה</button>
+  </div>
+</dialog>
+
+<script>
+'use strict';
+/* =====================================================================
+   הגדרות הטפסים. כדי להוסיף טופס – מוסיפים אובייקט ל-FORMS.
+   בלוקים:  table – טבלת שדות (rows = שורות, כל שורה מערך תאים)
+            line  – שאלה ותשובה קצרה באותה שורה
+            text  – שאלה עם שורות לתשובה חופשית
+            pick  – בחירה בהקפה בעיגול (multi = כמה אפשרויות)
+            head  – כותרת משנה
+   profile:'x' – פרט קבוע של הגן, נזכר וממולא אוטומטית.
+   child:'x'   – פרט של הילד, נשמר ברשימת הילדים במכשיר.
+   ===================================================================== */
+const FORMS = [{
+  id: 'clalit-ganenet-3-6',
+  title: 'שאלון לגננת/מטפלת לילדים בני 3-6',
+  source: 'כללית – התפתחות הילד',
+  sub: 'השאלון מנוסח בלשון זכר אך מיועד גם לבנים וגם לבנות',
+  intro: ['לכבוד הגננת/המטפלת,',
+    'על מנת לקבל התרשמות מלאה על הילד אשר הופנה אלינו להערכה, ולשם קביעת החלטות טיפוליות, חשובה לנו מאוד חוות דעתך. נודה לך על מילוי השאלון תוך כדי תאור תפקודו של הילד בכל סעיף.',
+    'אנא מלאי את השאלון במלואו. במידה והשאלה אינה רלוונטית לגיל הילד, אנא צייני זאת.'],
+  partial: 'כרגע הוזן רק העמוד הראשון של הטופס, מתוך צילום. שאר העמודים יתווספו כשתתקבל הסריקה המלאה.',
+  blocks: [
+    { t:'table', bold:true, rows:[
+      [{id:'childName',label:'שם הילד:',child:'name'},{id:'age',label:'גיל:',auto:'age'},{id:'fillDate',label:'תאריך מילוי השאלון:',type:'date',auto:'today'}],
+      [{id:'childTz',label:'ת.ז.:',child:'tz',mode:'numeric',span:2},{id:'birth',label:'תאריך לידה:',type:'date',child:'birth'}],
+    ]},
+    { t:'table', rows:[
+      [{id:'teacher',label:'שם הגננת/המטפלת:',profile:'teacher'},{id:'phone',label:'טלפון:',profile:'phone',type:'tel'}],
+      [{id:'place',label:'שם המסגרת החינוכית:',profile:'place'},{id:'address',label:'כתובת המסגרת החינוכית:',profile:'address'}],
+      [{id:'kind',label:'גן/מעון/משפחתון/מטפלת אישית:',profile:'kind'},{id:'edu',label:'חינוך רגיל/חינוך מיוחד:',profile:'edu'}],
+      [{id:'ages',label:'גיל הילדים במסגרת:',profile:'ages'},{id:'count',label:'מספר הילדים במסגרת:',profile:'count'}],
+      [{id:'known',label:'משך ההיכרות עם הילד:'},{id:'hours',label:'שעות פעילות המסגרת:',profile:'hours'}],
+      [{id:'aide',label:'האם מקבל סיוע במסגרת החינוכית (פרטי):',span:2}],
+    ]},
+    { t:'line', id:'needsHelp', label:'האם לדעתך הילד זקוק לעזרה מקצועית?' },
+    { t:'pick', id:'fields', multi:true, label:'באילו תחום/ים מקצועי/ים נדרשת לילד עזרה?',
+      hint:'(נא להקיף בעיגול את התחומים הרלוונטיים)',
+      options:['רופא התפתחותי','פיזיותרפיה','קלינאות-תקשורת','ריפוי-בעיסוק','פסיכולוגיה','אחר'] },
+    { t:'text', id:'others', label:'האם ידוע לך על גורמים טיפוליים נוספים מעורבים (פסיכותרפיה, רווחה וכו\')?', rows:2 },
+    { t:'head', label:'התרשמות כללית:' },
+    { t:'text', id:'general', label:'', rows:5 },
+  ]
+}];
+
+const PROFILE_LABELS = {teacher:'שם הגננת/המטפלת',phone:'טלפון',place:'שם המסגרת החינוכית',address:'כתובת המסגרת',
+  kind:'סוג המסגרת (גן/מעון/משפחתון)',edu:'חינוך רגיל/מיוחד',ages:'גיל הילדים במסגרת',count:'מספר הילדים במסגרת',hours:'שעות פעילות המסגרת'};
+
+/* ---------- שמירה: רק בדפדפן של המכשיר הזה (localStorage). שום דבר לא נשלח לשרת. ---------- */
+const KEY = 'tfasim.v1';
+const KEEP_DAYS = 90;   // טופס נמחק מהמכשיר אוטומטית אחרי כך וכך ימים מהעריכה האחרונה
+let db = load();
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(KEY));
+    if(d && d.entries){
+      const limit = Date.now() - KEEP_DAYS*864e5, n = d.entries.length;
+      d.entries = d.entries.filter(e => e.updated > limit);
+      if(d.entries.length !== n) localStorage.setItem(KEY, JSON.stringify(d));
+      return d;
+    }
+  }catch(e){}
+  return {profile:{}, children:[], entries:[]};
+}
+let storageOk = true;
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(db)); storageOk = true; }
+  catch(e){ storageOk = false; }
+  const s = document.getElementById('saved');
+  if(s) s.textContent = storageOk ? 'נשמר במכשיר ✓' : 'לא ניתן לשמור בדפדפן הזה';
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
+const heDate = iso => iso ? iso.split('-').reverse().join('/') : '';
+function ageText(birth, at){
+  if(!birth || !at) return '';
+  const b = new Date(birth), a = new Date(at);
+  let m = (a.getFullYear()-b.getFullYear())*12 + a.getMonth()-b.getMonth() - (a.getDate() < b.getDate() ? 1 : 0);
+  if(isNaN(m) || m < 0) return '';
+  const y = Math.floor(m/12); m %= 12;
+  return m ? `${y} שנים ו-${m} חודשים` : `${y} שנים`;
+}
+const formById = id => FORMS.find(f => f.id === id);
+const fieldsOf = form => form.blocks.flatMap(b => b.t === 'table' ? b.rows.flat() : (b.id ? [b] : []));
+
+/* ---------- ניווט ---------- */
+let view = {name:'home'};
+function go(v){ view = v; render(); window.scrollTo(0,0); }
+const app = document.getElementById('app'), bar = document.getElementById('bar');
+
+function render(){
+  bar.className = 'bar';
+  if(view.name === 'fill') return renderFill();
+  if(view.name === 'settings') return renderSettings();
+  renderHome();
+}
+
+function renderHome(){
+  bar.innerHTML = `<h1>טפסי הגן</h1><button data-act="settings">פרטי הגן וגיבוי</button>`;
+  const entries = [...db.entries].sort((a,b) => b.updated - a.updated);
+  app.innerHTML = `
+  <div class="card privacy">🔒 כל מה שממלאים נשמר <b>רק במכשיר הזה</b> (בזיכרון של הדפדפן). שום פרט לא נשלח לאתר או לאף אחד אחר.
+    טופס שמולא במחשב לא יופיע בטלפון. טופס נשמר כאן ${KEEP_DAYS} יום מהעריכה האחרונה ואז נמחק אוטומטית, ולכן כדאי לשמור אותו כ-PDF בסיום.</div>
+  <div class="card"><h2>טופס חדש</h2>
+    <ul class="list">${FORMS.map(f => `<li><div class="grow"><b>${esc(f.title)}</b><div class="muted">${esc(f.source)}</div></div>
+      <button class="btn" data-act="new" data-id="${f.id}">מילוי</button></li>`).join('')}</ul></div>
+  <div class="card"><h2>טפסים שמולאו</h2>
+    ${entries.length ? `<ul class="list">${entries.map(e => { const f = formById(e.formId); return `<li>
+      <div class="grow"><b>${esc(e.values.childName || 'ללא שם')}</b>
+        <div class="muted">${esc(f ? f.title : e.formId)} · ${heDate(e.values.fillDate)} · יימחק בעוד ${Math.max(1, Math.ceil((e.updated + KEEP_DAYS*864e5 - Date.now())/864e5))} ימים</div></div>
+      <button class="btn small" data-act="open" data-id="${e.id}">פתיחה</button>
+      <button class="btn ghost small" data-act="dup" data-id="${e.id}" title="אותו טופס לילד אחר, עם פרטי הגן">שכפול</button>
+      <button class="btn danger small" data-act="del" data-id="${e.id}">מחיקה</button></li>`; }).join('')}</ul>`
+      : `<p class="muted">עדיין לא מולאו טפסים.</p>`}</div>`;
+}
+
+function newEntry(formId, from){
+  const form = formById(formId), values = {};
+  for(const f of fieldsOf(form)){
+    if(f.profile && db.profile[f.profile]) values[f.id] = db.profile[f.profile];
+    if(f.auto === 'today') values[f.id] = today();
+  }
+  const e = {id:uid(), formId, childId:null, values, updated:Date.now()};
+  db.entries.push(e); save();
+  go({name:'fill', id:e.id});
+}
+
+/* ---------- מילוי הטופס ---------- */
+function inputHtml(f, v){
+  const common = `class="in" data-f="${f.id}" aria-label="${esc(f.label)}"`;
+  if(f.type === 'date') return `<input ${common} type="date" value="${esc(v)}"><span class="pv" data-pv="${f.id}"></span>`;
+  return `<input ${common} type="${f.type === 'tel' ? 'tel' : 'text'}" ${f.mode ? `inputmode="${f.mode}"` : ''} value="${esc(v)}" autocomplete="off">`;
+}
+function blockHtml(b, vals){
+  if(b.t === 'table'){
+    const cols = Math.max(...b.rows.map(r => r.reduce((n,c) => n + (c.span||1), 0)));
+    return `<table class="ft ${b.bold ? 'bold' : ''}"><tbody>${b.rows.map(r => `<tr>${r.map(c =>
+      `<td colspan="${Math.min(c.span||1, cols)}"><label class="cell"><span>${esc(c.label)}</span>${inputHtml(c, vals[c.id])}</label></td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  if(b.t === 'head') return `<div class="sec">${esc(b.label)}</div>`;
+  if(b.t === 'line') return `<label class="q inline"><span>${esc(b.label)}</span>${inputHtml(b, vals[b.id])}</label>`;
+  if(b.t === 'text') return `<div class="q">${b.label ? `<label class="ql" for="f-${b.id}">${esc(b.label)}</label>` : ''}
+    <textarea class="in" id="f-${b.id}" data-f="${b.id}" rows="${b.rows||3}" aria-label="${esc(b.label || 'תשובה')}">${esc(vals[b.id])}</textarea><div class="pv lines" data-pv="${b.id}" style="min-height:${(b.rows||3)*1.6}em"></div></div>`;
+  if(b.t === 'pick'){
+    const sel = [].concat(vals[b.id] || []);
+    return `<div class="q"><span class="ql">${esc(b.label)} <span class="hint">${esc(b.hint||'')}</span></span>
+      <div class="opts" data-pick="${b.id}">${b.options.map(o =>
+        `<button type="button" class="opt" aria-pressed="${sel.includes(o)}" data-opt="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`;
+  }
+  return '';
+}
+
+function renderFill(){
+  const e = db.entries.find(x => x.id === view.id);
+  if(!e) return go({name:'home'});
+  const form = formById(e.formId);
+  bar.className = 'bar fill';
+  bar.innerHTML = `<button data-act="leave">→ יציאה</button><h1>${esc(form.title)}</h1>
+    <span class="saved" id="saved" role="status">נשמר במכשיר ✓</span>
+    <button class="main" data-act="print">שמירה כ-PDF / הדפסה</button>`;
+  app.innerHTML = `
+    <div class="tools">${db.children.length ? `<select id="childPick" aria-label="בחירת ילד שמור">
+      <option value="">בחירת ילד מהרשימה…</option>${db.children.map(c =>
+        `<option value="${c.id}" ${c.id === e.childId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : ''}
+      <span class="muted">ממלאים ישירות על הדף. הכול נשמר אוטומטית במכשיר הזה בלבד.</span></div>
+    <div class="paper" id="paper">
+      <div class="org">${esc(form.source)}</div>
+      <h2 class="title">${esc(form.title)}</h2>
+      <p class="sub">${esc(form.sub)}</p>
+      <div class="intro">${form.intro.map(p => `<p>${esc(p)}</p>`).join('')}</div>
+      ${form.blocks.map(b => blockHtml(b, e.values)).join('')}
+      ${form.partial ? `<div class="todo">${esc(form.partial)}</div>` : ''}
+    </div>`;
+  app.querySelectorAll('textarea').forEach(grow);
+  syncPrint();
+  if(!storageOk) save();
+}
+// עותק להדפסה של תאריכים ושל תשובות ארוכות (כדי שיודפסו בפורמט ישראלי ויתפרסו על פני עמודים)
+function syncPrint(){
+  const e = currentEntry(); if(!e) return;
+  app.querySelectorAll('[data-pv]').forEach(x => {
+    const v = e.values[x.dataset.pv] || '';
+    x.textContent = x.classList.contains('lines') ? v : heDate(v);
+  });
+}
+function grow(t){ t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
+
+function currentEntry(){ return db.entries.find(x => x.id === view.id); }
+function setField(e, id, val){
+  e.values[id] = val; e.updated = Date.now();
+  const el = app.querySelector(`[data-f="${id}"]`);
+  if(el && el.value !== val) el.value = val;
+}
+function refreshAge(e){
+  const form = formById(e.formId), f = fieldsOf(form).find(x => x.auto === 'age');
+  if(!f) return;
+  const t = ageText(e.values.birth, e.values.fillDate || today());
+  if(t) setField(e, f.id, t);
+}
+
+app.addEventListener('input', ev => {
+  const el = ev.target.closest('[data-f]'); if(!el || view.name !== 'fill') return;
+  const e = currentEntry(); e.values[el.dataset.f] = el.value; e.updated = Date.now();
+  if(el.tagName === 'TEXTAREA') grow(el);
+  if(el.type === 'date') refreshAge(e);
+  syncPrint(); save();
+});
+// בסיום עריכת שדה: פרטי הגן נזכרים לפעם הבאה, ופרטי הילד נשמרים ברשימת הילדים
+app.addEventListener('change', ev => {
+  if(ev.target.id === 'childPick') return pickChild(ev.target.value);
+  const el = ev.target.closest('[data-f]'); if(!el || view.name !== 'fill') return;
+  const e = currentEntry(), f = fieldsOf(formById(e.formId)).find(x => x.id === el.dataset.f);
+  if(f.profile) db.profile[f.profile] = el.value.trim();
+  if(f.child){
+    let c = db.children.find(x => x.id === e.childId);
+    if(!c && (e.values.childName||'').trim()){ c = {id:uid()}; db.children.push(c); e.childId = c.id; }
+    if(c){ c.name = (e.values.childName||'').trim(); c.tz = e.values.childTz||''; c.birth = e.values.birth||''; }
+  }
+  save();
+});
+function pickChild(id){
+  const e = currentEntry(), c = db.children.find(x => x.id === id);
+  e.childId = c ? c.id : null;
+  if(c){ setField(e,'childName',c.name||''); setField(e,'childTz',c.tz||''); setField(e,'birth',c.birth||''); refreshAge(e); syncPrint(); }
+  save();
+}
+app.addEventListener('click', ev => {
+  const o = ev.target.closest('.opt'); if(!o) return;
+  const box = o.closest('[data-pick]'), e = currentEntry();
+  const b = formById(e.formId).blocks.find(x => x.id === box.dataset.pick);
+  const on = o.getAttribute('aria-pressed') !== 'true';
+  if(!b.multi) box.querySelectorAll('.opt').forEach(x => x.setAttribute('aria-pressed','false'));
+  o.setAttribute('aria-pressed', on);
+  e.values[b.id] = [...box.querySelectorAll('.opt[aria-pressed="true"]')].map(x => x.dataset.opt);
+  e.updated = Date.now(); save();
+});
+
+/* ---------- פרטי הגן, ילדים, גיבוי ---------- */
+function renderSettings(){
+  bar.innerHTML = `<button data-act="home">→ חזרה</button><h1>פרטי הגן וגיבוי</h1><span class="saved" id="saved" role="status"></span>`;
+  app.innerHTML = `
+  <div class="card set"><h2>הפרטים הקבועים של הגן</h2>
+    <div class="muted">ממולאים אוטומטית בכל טופס חדש. מתעדכנים גם כשמשנים אותם בתוך טופס.</div>
+    <div class="grid2">${Object.entries(PROFILE_LABELS).map(([k,l]) =>
+      `<label>${esc(l)}<input data-p="${k}" value="${esc(db.profile[k])}"></label>`).join('')}</div></div>
+  <div class="card"><h2>ילדים שמורים</h2>
+    ${db.children.length ? `<ul class="list">${db.children.map(c => `<li><div class="grow"><b>${esc(c.name)}</b>
+      <div class="muted">${c.tz ? 'ת.ז. ' + esc(c.tz) + ' · ' : ''}${c.birth ? 'נולד/ה ' + heDate(c.birth) : ''}</div></div>
+      <button class="btn danger small" data-act="delChild" data-id="${c.id}">הסרה</button></li>`).join('')}</ul>`
+      : `<p class="muted">ילד נשמר ברשימה כשממלאים את שמו בטופס.</p>`}</div>
+  <div class="card"><h2>גיבוי</h2>
+    <p class="muted">הנתונים נמצאים רק במכשיר הזה. קובץ הגיבוי מאפשר לשמור אותם בצד או להעביר אותם למכשיר אחר. הקובץ מכיל פרטים של ילדים – לשמור אותו במקום בטוח.</p>
+    <div class="row"><button class="btn" data-act="export">הורדת גיבוי</button>
+      <label class="btn ghost" style="cursor:pointer">טעינת גיבוי<input type="file" id="imp" accept="application/json,.json" hidden></label>
+      <button class="btn danger" data-act="wipe">מחיקת כל הנתונים מהמכשיר</button></div></div>`;
+}
+app.addEventListener('input', ev => {
+  const p = ev.target.dataset.p; if(!p) return;
+  db.profile[p] = ev.target.value.trim(); save();
+});
+app.addEventListener('change', ev => {
+  if(ev.target.id !== 'imp' || !ev.target.files[0]) return;
+  ev.target.files[0].text().then(t => {
+    const d = JSON.parse(t);
+    if(!d || !Array.isArray(d.entries)) throw 0;
+    if(!confirm('טעינת הגיבוי תחליף את כל הנתונים שבמכשיר הזה. להמשיך?')) return;
+    db = {profile:d.profile||{}, children:d.children||[], entries:d.entries}; save(); go({name:'home'});
+  }).catch(() => alert('הקובץ אינו קובץ גיבוי תקין.'));
+});
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]'); if(!b) return;
+  const id = b.dataset.id, act = b.dataset.act;
+  if(act === 'home') go({name:'home'});
+  else if(act === 'settings') go({name:'settings'});
+  else if(act === 'new') newEntry(id);
+  else if(act === 'open') go({name:'fill', id});
+  else if(act === 'print') printPdf();
+  else if(act === 'leave') document.getElementById('leave').showModal();
+  else if(act === 'stay') document.getElementById('leave').close();
+  else if(act === 'leaveOk'){ document.getElementById('leave').close(); go({name:'home'}); }
+  else if(act === 'leaveDel'){
+    if(confirm('למחוק את הטופס הזה מהמכשיר? אי אפשר לשחזר.')){
+      db.entries = db.entries.filter(x => x.id !== view.id); save();
+      document.getElementById('leave').close(); go({name:'home'}); }
+  }
+  else if(act === 'dup'){
+    const src = db.entries.find(x => x.id === id); newEntry(src.formId);
+  }
+  else if(act === 'del'){
+    const e = db.entries.find(x => x.id === id);
+    if(confirm(`למחוק את הטופס של ${e.values.childName || 'ללא שם'}? אי אפשר לשחזר.`)){
+      db.entries = db.entries.filter(x => x.id !== id); save(); render(); }
+  }
+  else if(act === 'delChild'){
+    if(confirm('להסיר את הילד מהרשימה? הטפסים שכבר מולאו עבורו יישארו.')){
+      db.children = db.children.filter(x => x.id !== id); save(); render(); }
+  }
+  else if(act === 'export'){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(db,null,1)], {type:'application/json'}));
+    a.download = `tfasim-gibuy-${today()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  else if(act === 'wipe'){
+    if(confirm('למחוק את כל הטפסים, הילדים ופרטי הגן מהמכשיר הזה? אי אפשר לשחזר.')){
+      localStorage.removeItem(KEY); db = load(); go({name:'home'}); }
+  }
+});
+// בחלון ההדפסה בוחרים "שמירה כ-PDF". שם הקובץ נקבע לפי שם הילד.
+function printPdf(){
+  const e = currentEntry(), old = document.title;
+  document.title = `${formById(e.formId).title} - ${e.values.childName || ''}`.replace(/[\\/:*?"<>|]/g,'-');
+  window.print();
+  setTimeout(() => document.title = old, 1000);
+}
+window.addEventListener('beforeprint', () => app.querySelectorAll('textarea').forEach(grow));
+document.getElementById('keepDays').textContent = KEEP_DAYS;
+render();
+</script>
+</body>
+</html>
