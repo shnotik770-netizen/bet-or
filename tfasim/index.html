@@ -95,6 +95,17 @@ main{max-width:900px;margin:0 auto;padding:16px}
 .sec{font-weight:700;font-style:italic;text-decoration:underline;margin:26px 0 6px}
 .todo{border:1.5px dashed #b58a00;background:#fff8dc;padding:10px 12px;font-family:Arial,sans-serif;font-size:14px;margin-top:26px}
 
+/* דפי הסריקה: מחוץ למסך בזמן המילוי, ומודפסים במקום הדף המוקלד */
+#scanout{position:fixed;left:0;top:0;width:210mm;visibility:hidden;pointer-events:none;z-index:-1}
+.scanpage{position:relative;width:210mm;height:296.6mm;overflow:hidden;background:#fff}
+.scanpage img{position:absolute;inset:0;width:100%;height:100%}
+.scanpage .ov{position:absolute;inset:0;direction:rtl;font-family:Arial,"Segoe UI",sans-serif;color:#0a2470}
+.ov>div{position:absolute;overflow:hidden}
+.sv{font-size:11pt;display:flex;align-items:flex-end;white-space:nowrap;line-height:1.15;padding-bottom:.4mm}
+.sv.small{font-size:9pt;white-space:normal;align-items:flex-start}
+.sv.multi{display:block;white-space:pre-wrap;overflow-wrap:anywhere;padding:0}
+.xm{display:flex;align-items:center;justify-content:center;font-size:13pt;font-weight:700}
+.ring{border:.5mm solid #0a2470;border-radius:50%}
 dialog{border:0;border-radius:14px;padding:22px;max-width:min(480px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.3)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 dialog h2{margin:0 0 8px;font-size:19px}
@@ -117,9 +128,15 @@ dialog p{margin:0 0 10px}
   .bar.fill .saved{flex:1}
 }
 @page{size:A4;margin:12mm 14mm}
+@page scan{size:A4;margin:0}
 @media print{
   body{background:#fff}
   .bar,.tools,.todo,.noprint,dialog{display:none!important}
+  body:not(.scanprint) #scanout{display:none}
+  body.scanprint main{display:none}
+  body.scanprint #scanout{position:static;visibility:visible;page:scan}
+  body.scanprint .scanpage{break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.scanprint .scanpage:last-child{break-after:auto}
   main{max-width:none;padding:0}
   .paper{border:0;box-shadow:none;padding:0;font-size:12.5pt}
   .paper .in{background-color:transparent!important;color:#000!important;font-size:12pt}
@@ -156,6 +173,7 @@ dialog p{margin:0 0 10px}
 <body>
 <div class="bar" id="bar"></div>
 <main id="app"></main>
+<div id="scanout" aria-hidden="true"></div>
 <dialog id="leave" aria-labelledby="leaveT">
   <h2 id="leaveT">הטופס נשמר במכשיר הזה</h2>
   <p>מה שמילאת נשמר רק בדפדפן של המכשיר הזה, ולא נשלח לאף מקום. אפשר לחזור אליו מהרשימה "טפסים שמולאו" ולהמשיך.</p>
@@ -190,6 +208,54 @@ const FORMS = [{
     'אנא מלאי את השאלון במלואו, יש למלא את הטפסים בכתב גדול וברור ובעט בלבד.',
     'במידה והשאלה אינה רלוונטית לגיל הילד, אנא צייני זאת.'],
   partial: 'הוזנו עמודים 1–4 מתוך הסריקה. טקסט שמסומן בצהוב לא היה קריא בסריקה ושוחזר בהשערה – צריך לאמת אותו מול הדף המקורי. עמודים 5 ואילך יתווספו כשיתקבלו.',
+  /* מיקום כל שדה על דפי הסריקה, באחוזים מגודל העמוד: [עמוד, x, y, רוחב, גובה, אפשרויות].
+     lh = גובה שורה (לשדה רב-שורתי), indent = הזחת השורה הראשונה (כשהתשובה מתחילה אחרי השאלה). */
+  scan: {
+    dir: 'scans/clalit-ganenet-3-6/', pages: 4,
+    f: {
+      childName:[1,62.6,32.8,14.5,2], age:[1,51.3,32.8,7.3,2], fillDate:[1,15.6,32.8,18,2],
+      childTz:[1,52,34.9,29.5,2], birth:[1,15.6,34.9,24,2],
+      teacher:[1,51.8,41.2,22.5,2], phone:[1,11.5,41.2,33.5,2],
+      place:[1,51.8,43.3,20.5,2], address:[1,11.5,43.3,19.5,2],
+      kind:[1,51.8,45.4,14,2], edu:[1,11.5,45.4,21,2],
+      ages:[1,51.8,47.4,23.3,2], count:[1,11.5,47.4,21.5,2],
+      known:[1,51.8,49.5,20.5,2], hours:[1,11.5,49.5,22.5,2],
+      aide:[1,11.5,51.6,47.5,2],
+      needsHelp:[1,16.5,56.8,45.5,2],
+      others:[1,16,69.2,76.5,8.2,{lh:2.05}],
+      attend:[1,30,79.3,39,2],
+      looks:[1,16,82.9,77,6.15,{lh:2.05}],
+      moodOther:[2,11.5,22.7,80,4,{lh:2,indent:12.5}],
+      discipline:[2,11.5,26.9,80,3.9,{lh:1.95,indent:22}],
+      indepMore:[2,11.5,45.7,75,2],
+      eat1:[2,14,52.4,77.5,4,{lh:2,indent:50.5}],
+      eat2:[2,14,56.5,51,2], eat3:[2,13.5,58.5,66,2], eatMore:[2,13.5,60.6,74,2],
+      p3q1:[3,15,12.3,76.5,2.1], p3q2:[3,15,16.2,76.5,2.1],
+      grossMore:[3,16,49.4,71.5,2], hand:[3,15,56.1,50,2],
+      fineMore:[3,13,83.2,74.5,4,{lh:2}],
+      langMore:[4,13,60.6,75,4.3,{lh:2.15}],
+      artic_n0:[4,63,72.6,26.5,2.9,{small:true}], artic_n1:[4,15.5,76,22.5,3.2,{small:true}],
+      artic_n2:[4,15.5,79.5,22.5,1.9,{small:true}], artic_n3:[4,15.5,81.6,22.5,1.9,{small:true}],
+      articMore:[4,13.5,84.9,74.5,2],
+    },
+    picks: {
+      fields: {'רופא התפתחותי':[1,81,63.1,11.5,2.4],'פיזיותרפיה':[1,69.8,63.1,10.5,2.4],'קלינאות-תקשורת':[1,54,63.1,15,2.4],
+        'ריפוי-בעיסוק':[1,42.8,63.1,10.5,2.4],'פסיכולוגיה':[1,31.3,63.1,10.3,2.4],'אחר':[1,25.7,63.1,4.3,2.4]},
+      mood: {'עליז ושמח':[2,85.8,17.2,5.6,2],'מצב רוח נוח':[2,77.3,17.2,8.4,2],'מגיע בשמחה לגן':[2,65.8,17.2,11.3,2],
+        'נפרד בקלות':[2,57,17.2,8.7,2],'משתף פעולה':[2,39.5,17.2,9.5,2],
+        'שינויים קיצוניים במצב הרוח':[2,73.3,19.25,18,2],'עצוב או מדוכדך':[2,62,19.25,11.2,2],'מתקשה להיפרד בבוקר':[2,44,19.25,18,2],'מרבה לבכות':[2,27.8,19.25,16,2],
+        'מוצץ אצבע או מוצץ':[2,74.6,21.1,16.6,2],'עקשן':[2,70,21.1,4.6,2],'נמצא בחוסר שקט':[2,56.2,21.1,13.8,2],'מגלה פחדים וחרדות':[2,40.8,21.1,15.3,2],'ביישן':[2,36.2,21.1,4.6,2]},
+    },
+    grids: {
+      indep: {p:2, cols:[45.8,34,22.5], rows:[[38.2,40.3],[40.3,42.3],[42.3,44.5]]},
+      sense: {p:2, cols:[49.5,37.6,25.4], rows:[0,1,2,3,4,5,6,7].map(i => [70.5+2.1*i, 72.6+2.1*i])},
+      gross: {p:3, cols:[55.6,45,35,25.7], ynCols:[58.3,47.4], rows:[0,1,2,3,4,5,6,7,8,9].map(i => [27.9+2.04*i, 29.94+2.04*i])},
+      fine:  {p:3, cols:[56.7,44.9,33,20.9], rows:[[65.3,69.4],[69.4,71.5],[71.5,73.6],[73.6,75.7],[75.7,77.6],[77.6,79.7],[79.7,81.9]]},
+      lang:  {p:4, cols:[49.4,37.2,25], rows:[[16.3,18.4],[18.4,20.4],[20.4,22.3],[22.3,24.5],[24.5,26.6],[26.6,30.7],[30.7,34.8],[34.8,39],
+        [39,41.1],[41.1,45.2],[45.2,47.2],[47.2,51.1],[51.1,55],[55,57.1],[57.1,59.3]]},
+      artic: {p:4, cols:[56.3,44.6], rows:[[70.2,75.7],[75.7,79.4],[79.4,81.5],[81.5,83.6]]},
+    },
+  },
   blocks: [
     { t:'table', bold:true, rows:[
       [{id:'childName',label:'שם הילד:',child:'name'},{id:'age',label:'גיל:',auto:'age'},{id:'fillDate',label:'תאריך מילוי השאלון:',type:'date',auto:'today'}],
@@ -302,7 +368,7 @@ function ageText(birth, at){
   let m = (a.getFullYear()-b.getFullYear())*12 + a.getMonth()-b.getMonth() - (a.getDate() < b.getDate() ? 1 : 0);
   if(isNaN(m) || m < 0) return '';
   const y = Math.floor(m/12); m %= 12;
-  return m ? `${y} שנים ו-${m} חודשים` : `${y} שנים`;
+  return m ? `${y} ש׳ ${m} ח׳` : `${y} שנים`;   // קצר, כדי להיכנס במשבצת "גיל" שבטופס
 }
 const formById = id => FORMS.find(f => f.id === id);
 const fieldsOf = form => form.blocks.flatMap(b => b.t === 'table' ? b.rows.flat() : (b.id ? [b] : []));
@@ -320,6 +386,7 @@ function render(){
 }
 
 function renderHome(){
+  scanBox.innerHTML = ''; scanBox.dataset.form = ''; document.body.classList.remove('scanprint');
   bar.innerHTML = `<h1>טפסי הגן</h1><button data-act="settings">פרטי הגן וגיבוי</button>`;
   const entries = [...db.entries].sort((a,b) => b.updated - a.updated);
   app.innerHTML = `
@@ -411,6 +478,7 @@ function renderFill(){
     </div>`;
   app.querySelectorAll('textarea').forEach(grow);
   syncPrint();
+  buildScan();   // טוען מראש את תמונות הסריקה
   if(!storageOk) save();
 }
 // עותק להדפסה של תאריכים ושל תשובות ארוכות (כדי שיודפסו בפורמט ישראלי ויתפרסו על פני עמודים)
@@ -553,14 +621,64 @@ document.addEventListener('click', ev => {
       localStorage.removeItem(KEY); db = load(); go({name:'home'}); }
   }
 });
+/* ---------- הדפסה על גבי סריקת המקור ----------
+   בקובץ שיורד, כל עמוד הוא תמונת הסריקה של הטופס המקורי, והתשובות מונחות עליה במקומן.
+   אם תמונות הסריקה לא נטענו, מודפסת הגרסה המוקלדת. */
+const scanBox = document.getElementById('scanout');
+function buildScan(){
+  const e = currentEntry(), sc = e && formById(e.formId).scan;
+  if(!sc){ scanBox.innerHTML = ''; scanBox.dataset.form = ''; document.body.classList.remove('scanprint'); return; }
+  if(scanBox.dataset.form !== e.formId){
+    scanBox.dataset.form = e.formId;
+    scanBox.innerHTML = Array.from({length:sc.pages}, (_, i) =>
+      `<div class="scanpage"><img src="${sc.dir}p${i+1}.jpg" alt="" onload="buildScan()"><div class="ov"></div></div>`).join('');
+  }
+  const out = Array.from({length:sc.pages}, () => []);
+  const box = (b, cls, html, extra='') => out[b[0]-1].push(
+    `<div class="${cls}" style="left:${b[1]}%;top:${b[2]}%;width:${b[3]}%;height:${b[4]}%;${extra}">${html}</div>`);
+  const types = Object.fromEntries(fieldsOf(formById(e.formId)).map(f => [f.id, f.type]));
+  for(const [id, b] of Object.entries(sc.f)){
+    let v = e.values[id]; if(!v) continue;
+    if(types[id] === 'date') v = heDate(v);
+    const o = b[5] || {};
+    if(o.lh) box(b, 'sv multi', esc(v), `line-height:${o.lh*2.97}mm;${o.indent ? `text-indent:${o.indent*2.1}mm;` : ''}`);
+    else box(b, 'sv' + (o.small ? ' small' : ''), `<span>${esc(v)}</span>`);
+  }
+  for(const [id, opts] of Object.entries(sc.picks || {}))
+    for(const o of [].concat(e.values[id] || [])) if(opts[o]) box(opts[o], 'ring', '');
+  for(const [id, g] of Object.entries(sc.grids || {})){
+    const block = formById(e.formId).blocks.find(x => x.id === id);
+    for(const [r, c] of Object.entries(e.values[id] || {})){
+      const row = g.rows[r], yn = block.rows[r].yn; if(!row) continue;
+      const cx = (yn ? g.ynCols : g.cols)[c], h = row[1] - row[0];
+      if(yn) box([g.p, cx-2.3, row[0]+0.15, 4.6, h-0.3], 'ring', '');
+      else box([g.p, cx-3, row[0], 6, h], 'xm', '✕');
+    }
+  }
+  scanBox.querySelectorAll('.ov').forEach((ov, i) => ov.innerHTML = out[i].join(''));
+  // הקטנת הכתב כשהתשובה ארוכה מהמקום שבטופס
+  scanBox.querySelectorAll('.sv').forEach(el => {
+    let size = el.classList.contains('small') ? 9 : 11;
+    const inner = el.firstElementChild;
+    const over = () => el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1 ||
+      (inner && inner.getBoundingClientRect().width > el.clientWidth + 1);
+    while(over() && size > 5){
+      size -= 0.5; el.style.fontSize = size + 'pt';
+      if(size < 8 && el.classList.contains('multi')) el.style.lineHeight = '1.15';
+    }
+  });
+  const imgs = [...scanBox.querySelectorAll('img')];
+  document.body.classList.toggle('scanprint', imgs.every(i => i.complete && i.naturalWidth > 0));
+}
 // בחלון ההדפסה בוחרים "שמירה כ-PDF". שם הקובץ נקבע לפי שם הילד.
 function printPdf(){
   const e = currentEntry(), old = document.title;
   document.title = `${formById(e.formId).title} - ${e.values.childName || ''}`.replace(/[\\/:*?"<>|]/g,'-');
+  buildScan();
   window.print();
   setTimeout(() => document.title = old, 1000);
 }
-window.addEventListener('beforeprint', () => app.querySelectorAll('textarea').forEach(grow));
+window.addEventListener('beforeprint', () => { app.querySelectorAll('textarea').forEach(grow); if(view.name === 'fill') buildScan(); });
 document.getElementById('keepDays').textContent = KEEP_DAYS;
 render();
 </script>
