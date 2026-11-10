@@ -73,6 +73,25 @@ main{max-width:900px;margin:0 auto;padding:16px}
 .opt[aria-pressed="true"]{border-color:#0b2a6b;color:#0b2a6b}
 .opt:focus-visible{outline:2px solid var(--accent)}
 .pv{display:none}
+.ql.b{font-weight:700}
+.opts.plain,.opts.plain .opt{font-weight:400}
+.opts.plain{gap:4px 8px}
+.unsure{background:#fff1a8;box-shadow:0 0 0 2px #fff1a8}
+.gt{width:100%;border-collapse:collapse;margin:6px 0 16px}
+.gt th,.gt td{border:1.5px solid var(--rule);padding:0;text-align:center;vertical-align:middle}
+.gt th{font-weight:700;padding:4px 6px;font-size:.95em}
+.gt td.rl{text-align:start;padding:4px 8px;width:46%}
+.gt td.off{border-color:transparent var(--rule) transparent transparent}
+.gt td.nt{text-align:start;padding:3px 5px;width:30%}
+.gt td.nt small{display:block;font-size:12px;color:#444}
+.mk{display:block;width:100%;min-height:36px;background:none;border:0;font:inherit;font-size:20px;line-height:1;color:#0b2a6b;font-family:Arial,sans-serif}
+.mk:hover{background:var(--fill)}
+.mk[aria-pressed="true"]:not(.yn)::after{content:"✕";font-weight:700}
+.mk.yn{font-size:inherit;font-family:inherit;color:#000}
+.mk.yn[aria-pressed="true"]{color:#0b2a6b;font-weight:700;text-decoration:underline;outline:2px solid #0b2a6b;outline-offset:-7px;border-radius:50%}
+.mk:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.pagebreak{border-top:2px dashed var(--line);margin:34px -40px 26px;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:var(--muted)}
+.pagebreak span{position:relative;top:-10px;background:#fff;padding:0 10px}
 .sec{font-weight:700;font-style:italic;text-decoration:underline;margin:26px 0 6px}
 .todo{border:1.5px dashed #b58a00;background:#fff8dc;padding:10px 12px;font-family:Arial,sans-serif;font-size:14px;margin-top:26px}
 
@@ -86,6 +105,10 @@ dialog p{margin:0 0 10px}
   .ft,.ft tbody,.ft tr,.ft td{display:block;width:100%}
   .ft td{margin-top:-1.5px}
   .ft td.empty{display:none}
+  .pagebreak{margin:26px -14px 20px}
+  .gt{font-size:14px}
+  .gt td.rl{padding:4px 5px;width:44%}
+  .gt th{padding:3px 2px}
   .cell{flex-wrap:wrap}
   .cell>span{white-space:normal}
   .grid2{grid-template-columns:1fr}
@@ -93,7 +116,7 @@ dialog p{margin:0 0 10px}
   .bar.fill h1{display:none}
   .bar.fill .saved{flex:1}
 }
-@page{size:A4;margin:14mm}
+@page{size:A4;margin:12mm 14mm}
 @media print{
   body{background:#fff}
   .bar,.tools,.todo,.noprint,dialog{display:none!important}
@@ -107,6 +130,25 @@ dialog p{margin:0 0 10px}
     background:repeating-linear-gradient(transparent 0 calc(1.6em - 1px),#777 calc(1.6em - 1px) 1.6em);
     -webkit-print-color-adjust:exact;print-color-adjust:exact}
   .opts{gap:4px 10px}
+  .pagebreak{break-before:page;border:0;margin:0;height:0;overflow:hidden}
+  .unsure{background:none;box-shadow:none}
+  .gt tr{break-inside:avoid}
+  .mk,.mk.yn[aria-pressed="true"]{color:#000;outline-color:#000}
+  /* צפוף יותר בהדפסה, כדי שכל עמוד של המקור ייכנס בעמוד A4 אחד */
+  .paper{font-size:11pt;line-height:1.35}
+  .paper h2.title{font-size:16pt;margin-top:6px}
+  .paper .sub{margin-bottom:10px;font-size:10pt}
+  .paper .intro{margin-bottom:12px}
+  .ft{margin-bottom:14px}
+  .cell{min-height:25px;padding:2px 6px}
+  .q{margin-bottom:9px}
+  .sec{margin:12px 0 3px}
+  .gt{margin:3px 0 8px}
+  .gt th{padding:2px 4px}
+  .gt td.rl{padding:2px 6px}
+  .mk{min-height:21px;font-size:13pt}
+  .paper .in,.pv{font-size:10.5pt}
+  .pv.lines{line-height:1.5em;background:repeating-linear-gradient(transparent 0 calc(1.5em - 1px),#777 calc(1.5em - 1px) 1.5em)}
   .opt[aria-pressed="true"]{border-color:#000;color:#000}
 }
 </style>
@@ -145,8 +187,9 @@ const FORMS = [{
   sub: 'השאלון מנוסח בלשון זכר אך מיועד גם לבנים וגם לבנות',
   intro: ['לכבוד הגננת/המטפלת,',
     'על מנת לקבל התרשמות מלאה על הילד אשר הופנה אלינו להערכה, ולשם קביעת החלטות טיפוליות, חשובה לנו מאוד חוות דעתך. נודה לך על מילוי השאלון תוך כדי תאור תפקודו של הילד בכל סעיף.',
-    'אנא מלאי את השאלון במלואו. במידה והשאלה אינה רלוונטית לגיל הילד, אנא צייני זאת.'],
-  partial: 'כרגע הוזן רק העמוד הראשון של הטופס, מתוך צילום. שאר העמודים יתווספו כשתתקבל הסריקה המלאה.',
+    'אנא מלאי את השאלון במלואו, יש למלא את הטפסים בכתב גדול וברור ובעט בלבד.',
+    'במידה והשאלה אינה רלוונטית לגיל הילד, אנא צייני זאת.'],
+  partial: 'הוזנו עמודים 1–4 מתוך הסריקה. טקסט שמסומן בצהוב לא היה קריא בסריקה ושוחזר בהשערה – צריך לאמת אותו מול הדף המקורי. עמודים 5 ואילך יתווספו כשיתקבלו.',
   blocks: [
     { t:'table', bold:true, rows:[
       [{id:'childName',label:'שם הילד:',child:'name'},{id:'age',label:'גיל:',auto:'age'},{id:'fillDate',label:'תאריך מילוי השאלון:',type:'date',auto:'today'}],
@@ -166,7 +209,60 @@ const FORMS = [{
       options:['רופא התפתחותי','פיזיותרפיה','קלינאות-תקשורת','ריפוי-בעיסוק','פסיכולוגיה','אחר'] },
     { t:'text', id:'others', label:'האם ידוע לך על גורמים טיפוליים נוספים מעורבים (פסיכותרפיה, רווחה וכו\')?', rows:2 },
     { t:'head', label:'התרשמות כללית:' },
-    { t:'text', id:'general', label:'', rows:5 },
+    { t:'line', id:'attend', label:'מבקר סדיר במסגרת (כן/לא, פרטי):', unsure:true },
+    { t:'text', id:'looks', label:'הופעה חיצונית (לבוש, ניקיון, מאפיינים מיוחדים):', unsure:true, rows:3 },
+
+    { t:'page', n:2 },
+    { t:'note', text:'בסעיפים הבאים, אנא תארי את תפקודו של הילד במסגרת. אנא סמני את ההתנהגות המתאימה ופרטי בהתאם לצורך.', unsure:true },
+    { t:'pick', id:'mood', multi:true, plain:true, label:'מצב רוח כללי ותיאור התנהגויות אופייניות:', hint:'(הקיפי את המתאים)', boldLabel:true, unsure:true,
+      options:['עליז ושמח','מצב רוח נוח','מגיע בשמחה לגן','נפרד בקלות','משתף פעולה',
+        'שינויים קיצוניים במצב הרוח','עצוב או מדוכדך','מתקשה להיפרד בבוקר','מרבה לבכות',
+        'מוצץ אצבע או מוצץ','עקשן','נמצא בחוסר שקט','מגלה פחדים וחרדות','ביישן'] },
+    { t:'text', id:'moodOther', label:'אחר, אנא פרטי', boldLabel:true, rows:2 },
+    { t:'text', id:'discipline', label:'משמעת ויכולת לקבל גבולות', boldLabel:true, rows:2 },
+    { t:'head', label:'עצמאות ותלות:' },
+    { t:'grid', id:'indep', cols:['עצמאי','לפעמים תלוי','תלוי במבוגר'], unsureCols:true,
+      rows:['עצמאי במשימות','אכילה עם כפית ומזלג','הרגלי ניקיון (שירותים, שטיפת ידיים)'] },
+    { t:'text', id:'indepMore', label:'פרטי:', rows:1 },
+    { t:'head', label:'אכילה:' },
+    { t:'text', id:'eat1', label:'מהן שעות הארוחות? האם אוכל את המוגש בגן או מביא אוכל מהבית?', rows:2 },
+    { t:'text', id:'eat2', label:'אילו סוגי אוכל מעדיף/מסרב לאכול?', rows:1 },
+    { t:'line', id:'eat3', label:'האם קיים ריור?' },
+    { t:'text', id:'eatMore', label:'פרטי:', rows:1 },
+    { t:'head', label:'תחושה:' },
+    { t:'grid', id:'sense', cols:['נהנה','מסכים','נמנע'],
+      rows:['משחק בחול','משחק בבצק/פלסטלינה','צבעי ידיים','דבק','מגע עם מים','מגע עם ילדים ומבוגרים','עמידה בתור עם ילדים נוספים','פעילויות עם רעש (מסיבות/חגים)'] },
+
+    { t:'page', n:3 },
+    { t:'text', id:'p3q1', label:'[שאלה שאינה קריאה בסריקה – עמוד 3, שורה ראשונה]', unsure:true, rows:2 },
+    { t:'text', id:'p3q2', label:'[שאלה שאינה קריאה בסריקה – עמוד 3, שורה שנייה]', unsure:true, rows:2 },
+    { t:'head', label:'פעילות בחצר ותנועה:' },
+    { t:'grid', id:'gross', cols:['בהתאם לגיל','מתקשה','מתקשה מאוד','נמנע'], unsureCols:true,
+      rows:['הליכה וריצה','קפיצה','משחקי כדור','שימוש במתקני חצר','עליה וירידה במדרגות','השתתפות בריתמיקה','השתתפות בפעילות תנועה בגן','פעילות במתקנים',
+        {label:'האם מתעייף בקלות?', yn:true},{label:'האם מסורבל?', yn:true}] },
+    { t:'text', id:'grossMore', label:'פרטי:', rows:1 },
+    { t:'head', label:'מוטוריקה עדינה:' },
+    { t:'line', id:'hand', label:'דומיננטיות ידנית (קבועה/מחליף ידיים)' },
+    { t:'grid', id:'fine', cols:['בהתאם לגיל','מתקשה','מתקשה מאוד','נמנע'],
+      rows:['מניפולציות כף יד (חרוזים, פטריות, הרכבות קטנות)','גזירה','אחיזה ושליטה בכלי כתיבה','ציור','צביעה','יצירה','התארגנות בזמן עבודה'] },
+    { t:'text', id:'fineMore', label:'פרטי:', rows:2 },
+
+    { t:'page', n:4 },
+    { t:'head', label:'שפה (הבנה והבעה):', unsure:true },
+    { t:'grid', id:'lang', cols:['בדרך כלל','לפעמים','לעיתים רחוקות'],
+      rows:[{label:'מבין את הוראות הגננת/הילדים בגן', unsure:true},{label:'מבין הוראות', unsure:true},
+        {label:'מכיר וזוכר הוראות, ימי שבוע, שירים', unsure:true},{label:'מבין ועונה לעניין לשאלות שנשאל', unsure:true},
+        {label:'מסוגל לשיחה משמעותית', unsure:true},
+        'מצליח במשימות של מודעות פונולוגית (חריזה, צליל פותח)','מתבטא בעזרת אוצר מילים רחב (שמות עצם, פעלים, תארים)',
+        'מטה פעלים באופן תקין (עבר, הווה, עתיד)','משתמש במילות יחס (מעל, בתוך)','משתמש בשמות גוף מתאימים (אני, הוא, אתם)',
+        'מדבר במשפטים בני 3 מילים או יותר','משתמש במשפטים מחוברים ומורכבים (ו..., בגלל ש..., כי...)',
+        'מתאר באופן מילולי תמונות המוצגות לפניו','מספר סיפור בעזרת רצף תמונות','מספר חוויה בצורה מאורגנת'] },
+    { t:'text', id:'langMore', label:'פרטי:', rows:2 },
+    { t:'head', label:'היגוי:' },
+    { t:'grid', id:'artic', cols:['כן','לא'], notes:'הערות',
+      rows:[{label:'האם קיימים שיבושי היגוי?', noteHint:'אם כן, באילו מהצלילים:', unsure:true},
+        'האם קיימים חילופי אותיות במילים (מחשב=משחב)','האם קיים חוסר שטף? (גמגום)','האם קיימת צרידות'] },
+    { t:'text', id:'articMore', label:'פרטי:', rows:1 },
   ]
 }];
 
@@ -265,14 +361,28 @@ function blockHtml(b, vals){
     return `<table class="ft ${b.bold ? 'bold' : ''}"><tbody>${b.rows.map(r => `<tr>${r.map(c =>
       `<td colspan="${Math.min(c.span||1, cols)}"><label class="cell"><span>${esc(c.label)}</span>${inputHtml(c, vals[c.id])}</label></td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
-  if(b.t === 'head') return `<div class="sec">${esc(b.label)}</div>`;
-  if(b.t === 'line') return `<label class="q inline"><span>${esc(b.label)}</span>${inputHtml(b, vals[b.id])}</label>`;
-  if(b.t === 'text') return `<div class="q">${b.label ? `<label class="ql" for="f-${b.id}">${esc(b.label)}</label>` : ''}
-    <textarea class="in" id="f-${b.id}" data-f="${b.id}" rows="${b.rows||3}" aria-label="${esc(b.label || 'תשובה')}">${esc(vals[b.id])}</textarea><div class="pv lines" data-pv="${b.id}" style="min-height:${(b.rows||3)*1.6}em"></div></div>`;
+  const lab = (x, t) => `<span class="${x.unsure ? 'unsure' : ''}"${x.unsure ? ' title="לא קריא בסריקה – לאמת מול המקור"' : ''}>${esc(t ?? x.label)}</span>`;
+  if(b.t === 'head') return `<div class="sec">${lab(b)}</div>`;
+  if(b.t === 'note') return `<p class="q">${lab(b, b.text)}</p>`;
+  if(b.t === 'page') return `<div class="pagebreak"><span>עמוד ${b.n}</span></div>`;
+  if(b.t === 'grid'){
+    const val = vals[b.id] || {};
+    return `<table class="gt"><thead><tr><th></th>${b.cols.map(c => `<th>${b.unsureCols ? lab({unsure:true}, c) : esc(c)}</th>`).join('')}${b.notes ? `<th>${esc(b.notes)}</th>` : ''}</tr></thead><tbody>${
+      b.rows.map((r, i) => { r = typeof r === 'string' ? {label:r} : r;
+        return `<tr><td class="rl">${lab(r)}</td>${b.cols.map((c, j) => {
+          const name = r.yn ? (j === 0 ? 'כן' : j === 1 ? 'לא' : null) : c;
+          return name === null ? '<td class="off"></td>' :
+            `<td><button type="button" class="mk ${r.yn ? 'yn' : ''}" data-g="${b.id}" data-r="${i}" data-c="${j}" aria-pressed="${val[i] === j}" aria-label="${esc(r.label)} – ${esc(name)}">${r.yn ? name : ''}</button></td>`;
+        }).join('')}${b.notes ? `<td class="nt">${r.noteHint ? `<small>${esc(r.noteHint)}</small>` : ''}<input class="in" data-f="${b.id}_n${i}" value="${esc(vals[b.id + '_n' + i])}" aria-label="${esc(r.label)} – ${esc(b.notes)}" autocomplete="off"></td>` : ''}</tr>`;
+      }).join('')}</tbody></table>`;
+  }
+  if(b.t === 'line') return `<label class="q inline">${lab(b)}${inputHtml(b, vals[b.id])}</label>`;
+  if(b.t === 'text') return `<div class="q">${b.label ? `<label class="ql ${b.boldLabel ? 'b' : ''}" for="f-${b.id}">${lab(b)}</label>` : ''}
+    <textarea class="in" id="f-${b.id}" data-f="${b.id}" rows="${b.rows||3}" aria-label="${esc(b.label || 'תשובה')}">${esc(vals[b.id])}</textarea><div class="pv lines" data-pv="${b.id}" style="min-height:${(b.rows||3)*1.5}em"></div></div>`;
   if(b.t === 'pick'){
     const sel = [].concat(vals[b.id] || []);
-    return `<div class="q"><span class="ql">${esc(b.label)} <span class="hint">${esc(b.hint||'')}</span></span>
-      <div class="opts" data-pick="${b.id}">${b.options.map(o =>
+    return `<div class="q"><span class="ql ${b.boldLabel ? 'b' : ''}">${lab(b)} <span class="hint">${esc(b.hint||'')}</span></span>
+      <div class="opts ${b.plain ? 'plain' : ''}" data-pick="${b.id}">${b.options.map(o =>
         `<button type="button" class="opt" aria-pressed="${sel.includes(o)}" data-opt="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`;
   }
   return '';
@@ -338,8 +448,8 @@ app.addEventListener('change', ev => {
   if(ev.target.id === 'childPick') return pickChild(ev.target.value);
   const el = ev.target.closest('[data-f]'); if(!el || view.name !== 'fill') return;
   const e = currentEntry(), f = fieldsOf(formById(e.formId)).find(x => x.id === el.dataset.f);
-  if(f.profile) db.profile[f.profile] = el.value.trim();
-  if(f.child){
+  if(f && f.profile) db.profile[f.profile] = el.value.trim();
+  if(f && f.child){
     let c = db.children.find(x => x.id === e.childId);
     if(!c && (e.values.childName||'').trim()){ c = {id:uid()}; db.children.push(c); e.childId = c.id; }
     if(c){ c.name = (e.values.childName||'').trim(); c.tz = e.values.childTz||''; c.birth = e.values.birth||''; }
@@ -353,6 +463,15 @@ function pickChild(id){
   save();
 }
 app.addEventListener('click', ev => {
+  const m = ev.target.closest('.mk');
+  if(m){   // סימון בטבלה: לחיצה מסמנת, לחיצה נוספת מבטלת. סימון אחד בכל שורה.
+    const e = currentEntry(), g = m.dataset.g, on = m.getAttribute('aria-pressed') !== 'true';
+    m.closest('tr').querySelectorAll('.mk').forEach(x => x.setAttribute('aria-pressed','false'));
+    m.setAttribute('aria-pressed', on);
+    const v = e.values[g] = e.values[g] || {};
+    if(on) v[m.dataset.r] = +m.dataset.c; else delete v[m.dataset.r];
+    e.updated = Date.now(); save(); return;
+  }
   const o = ev.target.closest('.opt'); if(!o) return;
   const box = o.closest('[data-pick]'), e = currentEntry();
   const b = formById(e.formId).blocks.find(x => x.id === box.dataset.pick);
