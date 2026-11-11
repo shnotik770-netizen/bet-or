@@ -96,6 +96,23 @@ a.btn{text-decoration:none;display:inline-block}
 .mk.yn{font-size:inherit;font-family:inherit;color:#000}
 .mk.yn[aria-pressed="true"]{color:#0b2a6b;font-weight:700;text-decoration:underline;outline:2px solid #0b2a6b;outline-offset:-7px;border-radius:50%}
 .mk:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.gtools{text-align:start;margin:8px 0 -2px;font-family:Arial,sans-serif}
+.wm{background:none;border:1px solid var(--line);border-radius:14px;padding:3px 11px;font-size:13px;color:var(--accent)}
+.wm[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.paper textarea.ct{min-height:30px;font-size:14px;line-height:1.3;background-image:none;padding:3px 4px;text-align:center}
+.gt.writing td:not(.rl):not(.nt):not(.off){background:var(--fill)}
+.opts.letters{gap:3px;margin:4px 0 6px;justify-content:flex-start}
+.opts.letters .opt{padding:1px 7px;min-width:30px;border-radius:50%;font-size:17px}
+.blank{margin-top:10px}
+#pvbar{display:none}
+body.preview{overflow:hidden}
+body.preview #scanout{visibility:visible;pointer-events:auto;z-index:40;inset:0;width:auto;overflow:auto;background:#59625d;padding:58px 8px 24px}
+body.preview #scanout .scanpage{zoom:var(--pvzoom,1);margin:0 auto 14px;box-shadow:0 2px 14px rgba(0,0,0,.45)}
+body.preview #pvbar{display:flex;position:fixed;top:0;left:0;right:0;z-index:41;background:var(--accent);color:#fff;align-items:center;gap:10px;padding:9px 12px}
+#pvbar span{flex:1;text-align:center;font-size:14px}
+#pvbar button{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:7px 12px}
+#pvbar button.main{background:#fff;color:var(--accent);font-weight:700;border-color:#fff}
+.sv.small.cell{align-items:center;justify-content:center;text-align:center;line-height:1.05}
 .pagebreak{border-top:2px dashed var(--line);margin:34px -40px 26px;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:var(--muted)}
 .pagebreak span{position:relative;top:-10px;background:#fff;padding:0 10px}
 .sec{font-weight:700;font-style:italic;text-decoration:underline;margin:26px 0 6px}
@@ -137,7 +154,7 @@ dialog p{margin:0 0 10px}
 @page scan{size:A4;margin:0}
 @media print{
   body{background:#fff}
-  .bar,.tools,.todo,.noprint,dialog{display:none!important}
+  .bar,.tools,.todo,.noprint,dialog,#pvbar,.gtools{display:none!important}
   body:not(.scanprint) #scanout{display:none}
   body.scanprint main{display:none}
   body.scanprint #scanout{position:static;visibility:visible;page:scan}
@@ -180,6 +197,7 @@ dialog p{margin:0 0 10px}
 <div class="bar" id="bar"></div>
 <main id="app"></main>
 <div id="scanout" aria-hidden="true"></div>
+<div id="pvbar"><button data-act="closePreview">✕ סגירה</button><span></span><button class="main" data-act="print">שמירה כ-PDF</button></div>
 <dialog id="leave" aria-labelledby="leaveT">
   <h2 id="leaveT">הטופס נשמר במכשיר הזה</h2>
   <p>מה שמילאת נשמר רק בדפדפן של המכשיר הזה, ולא נשלח לאף מקום. אפשר לחזור אליו מהרשימה "טפסים שמולאו" ולהמשיך.</p>
@@ -260,6 +278,7 @@ const FORMS = [{
     picks: {
       fields: {'רופא התפתחותי':[1, 79.09, 64.32, 14.11, 2.08],'פיזיותרפיה':[1, 69.69, 64.32, 10.21, 2.08],'קלינאות-תקשורת':[1, 54.14, 64.32, 15.46, 2.08],'ריפוי-בעיסוק':[1, 42.33, 64.32, 11.97, 2.08],'פסיכולוגיה':[1, 32.11, 64.32, 10.29, 2.08],'אחר':[1, 27.34, 64.32, 4.87, 2.08]},
       mood: {'עליז ושמח':[2, 83.18, 18.26, 8.92, 1.97],'מצב רוח נוח':[2, 73.55, 18.26, 10.17, 1.97],'מגיע בשמחה לגן':[2, 60.97, 18.26, 13.1, 1.97],'נפרד בקלות':[2, 51.72, 18.26, 9.79, 1.97],'משתף פעולה':[2, 41.71, 18.26, 10.54, 1.97],'שינויים קיצוניים במצב הרוח':[2, 70.07, 20.36, 22.03, 1.97],'עצוב או מדוכדך':[2, 58, 20.36, 12.6, 1.97],'מתקשה להיפרד בבוקר':[2, 40.51, 20.36, 17.65, 1.97],'מרבה לבכות':[2, 30.77, 20.36, 10.27, 1.97],'מוצץ אצבע או מוצץ':[2, 76.84, 22.26, 15.26, 1.97],'עקשן':[2, 72.15, 22.26, 5.23, 1.97],'נמצא בחוסר שקט':[2, 58.58, 22.26, 14.11, 1.97],'מגלה פחדים וחרדות':[2, 43.09, 22.26, 16.02, 1.97],'ביישן':[2, 38.25, 22.26, 5.36, 1.97]},
+      articLetters: {'ב':[4, 32.17, 75.38, 1.28, 1.82],'ג':[4, 30.88, 75.38, 1.07, 1.82],'ד':[4, 29.37, 75.38, 1.29, 1.82],'ו':[4, 28.09, 75.38, 1.06, 1.82],'ז':[4, 26.8, 75.38, 1.07, 1.82],'ח':[4, 25.08, 75.38, 1.51, 1.82],'ט':[4, 23.35, 75.38, 1.51, 1.82],'כ':[4, 21.84, 75.38, 1.29, 1.82],'ל':[4, 20.33, 75.38, 1.29, 1.82],'מ':[4, 18.61, 75.38, 1.51, 1.82],'נ':[4, 17.32, 75.38, 1.07, 1.82],'ס':[4, 15.59, 75.38, 1.51, 1.82],'פ':[4, 14.08, 75.38, 1.29, 1.82],'צ':[4, 32.17, 77.38, 1.29, 1.82],'ק':[4, 30.44, 77.38, 1.51, 1.82],'ר':[4, 28.93, 77.38, 1.29, 1.82],'ש':[4, 27.2, 77.38, 1.51, 1.82],'ת':[4, 25.5, 77.38, 1.49, 1.82]},
       nextYear: {'גן':[6, 58.32, 73.06, 2.69, 1.97],'גן משולב':[6, 51.08, 73.06, 7.77, 1.97],'גן טיפולי':[6, 43.69, 73.06, 7.92, 1.97],'אחר':[6, 39.64, 73.06, 4.59, 1.97]},
       c_repeat: {'כן':[7, 85.41, 21.47, 2.84, 1.89],'לא':[7, 83.01, 21.47, 3.33, 1.89]},
       c_meds: {'כן':[7, 49.7, 21.47, 2.84, 1.89],'לא':[7, 47.31, 21.47, 3.33, 1.89]},
@@ -351,7 +370,8 @@ const FORMS = [{
     { t:'text', id:'langMore', label:'פרטי:', rows:2 },
     { t:'head', label:'היגוי:' },
     { t:'grid', id:'artic', cols:['כן','לא'], notes:'הערות',
-      rows:[{label:'האם קיימים שיבושי היגוי?', noteHint:'אם כן, באילו מהצלילים הבאים: ב, ג, ד, ו, ז, ח, ט, כ, ל, מ, נ, ס, פ, צ, ק, ר, ש, ת'},
+      rows:[{label:'האם קיימים שיבושי היגוי?', noteHint:'אם כן, באילו מהצלילים הבאים (לסמן):',
+          letters:{id:'articLetters', options:['ב','ג','ד','ו','ז','ח','ט','כ','ל','מ','נ','ס','פ','צ','ק','ר','ש','ת']}},
         'האם קיימים חילופי אותיות במילים (מחשב=משחב)','האם קיים חוסר שטף? (גמגום)','האם קיימת צרידות'] },
     { t:'text', id:'articMore', label:'פרטי:', rows:1 },
 
@@ -489,13 +509,17 @@ function formCards(q){
     return `<div class="card"><div class="row"><div class="grow"><h2>${esc(f.title)}</h2>
         <div class="muted">${esc(f.source)}${f.scan ? ' · ' + f.scan.pages.length + ' עמודים' : ''}</div></div>
         <button class="btn" data-act="new" data-id="${f.id}">מילוי חדש</button>
-        ${f.scan && f.scan.blank ? `<a class="btn ghost" href="${f.scan.dir}${f.scan.blank}" target="_blank" rel="noopener">טופס ריק לדוגמה</a>` : ''}</div>
+        </div>
+      ${f.scan && f.scan.blank ? `<div class="row blank"><span class="muted">טופס ריק:</span>
+        <a class="btn ghost small" href="${f.scan.dir}${f.scan.blank}" target="_blank" rel="noopener">הצגה</a>
+        <a class="btn ghost small" href="${f.scan.dir}${f.scan.blank}" download="${esc(f.title.replace(/[\\/:*?"<>|]/g,'-'))} - ריק.pdf">הורדה</a></div>` : ''}
       <h3>טפסים שמורים (${mine.length})</h3>
       ${mine.length ? `<ul class="list">${mine.map(entryRow).join('')}</ul>` : `<p class="muted">עדיין לא מולאו טפסים מהסוג הזה במכשיר הזה.</p>`}</div>`;
   }).join('');
 }
 let homeQuery = '';
 function renderHome(){
+  closePreview();
   scanBox.innerHTML = ''; scanBox.dataset.form = ''; document.body.classList.remove('scanprint');
   bar.innerHTML = `<h1>טפסי הגן</h1><button data-act="settings">פרטי הגן וגיבוי</button>`;
   app.innerHTML = `
@@ -522,6 +546,7 @@ function newEntry(formId, from){
 }
 
 /* ---------- מילוי הטופס ---------- */
+const writeMode = new Set();   // טבלאות שנמצאות כרגע במצב כתיבת טקסט במשבצות
 function inputHtml(f, v){
   const common = `class="in" data-f="${f.id}" aria-label="${esc(f.label)}"`;
   if(f.type === 'date') return `<input ${common} type="date" value="${esc(v)}"><span class="pv" data-pv="${f.id}"></span>`;
@@ -538,14 +563,21 @@ function blockHtml(b, vals){
   if(b.t === 'note') return `<p class="q ${b.screenOnly ? 'todo' : ''}">${lab(b, b.text)}</p>`;
   if(b.t === 'page') return `<div class="pagebreak"><span>עמוד ${b.n}</span></div>`;
   if(b.t === 'grid'){
-    const val = vals[b.id] || {};
-    return `<table class="gt"><thead><tr><th></th>${b.cols.map(c => `<th>${b.unsureCols ? lab({unsure:true}, c) : esc(c)}</th>`).join('')}${b.notes ? `<th>${esc(b.notes)}</th>` : ''}</tr></thead><tbody>${
+    const val = vals[b.id] || {}, txt = vals[b.id + '_t'] || {}, writing = writeMode.has(b.id);
+    return `<div class="gtools"><button type="button" class="wm" data-wm="${b.id}" aria-pressed="${writing}">${writing ? '✕ חזרה לסימון' : '✎ כתיבת טקסט במשבצות'}</button></div>
+    <table class="gt ${writing ? 'writing' : ''}"><thead><tr><th></th>${b.cols.map(c => `<th>${b.unsureCols ? lab({unsure:true}, c) : esc(c)}</th>`).join('')}${b.notes ? `<th>${esc(b.notes)}</th>` : ''}</tr></thead><tbody>${
       b.rows.map((r, i) => { r = typeof r === 'string' ? {label:r} : r;
         return `<tr><td class="rl">${lab(r)}</td>${b.cols.map((c, j) => {
           const name = r.yn ? (j === 0 ? 'כן' : j === 1 ? 'לא' : null) : c;
-          return name === null ? '<td class="off"></td>' :
-            `<td><button type="button" class="mk ${r.yn ? 'yn' : ''}" data-g="${b.id}" data-r="${i}" data-c="${j}" aria-pressed="${val[i] === j}" aria-label="${esc(r.label)} – ${esc(name)}">${r.yn ? name : ''}</button></td>`;
-        }).join('')}${b.notes ? `<td class="nt">${r.noteHint ? `<small>${esc(r.noteHint)}</small>` : ''}<input class="in" data-f="${b.id}_n${i}" value="${esc(vals[b.id + '_n' + i])}" aria-label="${esc(r.label)} – ${esc(b.notes)}" autocomplete="off"></td>` : ''}</tr>`;
+          if(name === null) return '<td class="off"></td>';
+          const t = txt[i + '_' + j] || '', aria = `${esc(r.label)} – ${esc(name)}`;
+          const wr = writing && !r.yn;   // בשורות כן/לא נשאר רק הסימון
+          return `<td>${wr ? '' : `<button type="button" class="mk ${r.yn ? 'yn' : ''}" data-g="${b.id}" data-r="${i}" data-c="${j}" aria-pressed="${val[i] === j}" aria-label="${aria}">${r.yn ? name : ''}</button>`}${
+            wr || (t && !r.yn) ? `<textarea class="in ct" rows="1" data-ct="${b.id}|${i}_${j}" aria-label="${aria} – טקסט">${esc(t)}</textarea>` : ''}</td>`;
+        }).join('')}${b.notes ? `<td class="nt">${r.noteHint ? `<small>${esc(r.noteHint)}</small>` : ''}${
+          r.letters ? `<div class="opts plain letters" data-pick="${r.letters.id}" data-multi="1">${r.letters.options.map(o =>
+            `<button type="button" class="opt" aria-pressed="${[].concat(vals[r.letters.id] || []).includes(o)}" data-opt="${esc(o)}">${esc(o)}</button>`).join('')}</div><small>או לכתוב כאן:</small>` : ''
+          }<input class="in" data-f="${b.id}_n${i}" value="${esc(vals[b.id + '_n' + i])}" aria-label="${esc(r.label)} – ${esc(b.notes)}" autocomplete="off"></td>` : ''}</tr>`;
       }).join('')}</tbody></table>`;
   }
   if(b.t === 'line') return `<label class="q inline">${lab(b)}${inputHtml(b, vals[b.id])}</label>`;
@@ -554,7 +586,7 @@ function blockHtml(b, vals){
   if(b.t === 'pick'){
     const sel = [].concat(vals[b.id] || []);
     return `<div class="q"><span class="ql ${b.boldLabel ? 'b' : ''}">${lab(b)} <span class="hint">${esc(b.hint||'')}</span></span>
-      <div class="opts ${b.plain ? 'plain' : ''}" data-pick="${b.id}">${b.options.map(o =>
+      <div class="opts ${b.plain ? 'plain' : ''}" data-multi="${b.multi ? 1 : 0}" data-pick="${b.id}">${b.options.map(o =>
         `<button type="button" class="opt" aria-pressed="${sel.includes(o)}" data-opt="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`;
   }
   return '';
@@ -567,6 +599,7 @@ function renderFill(){
   bar.className = 'bar fill';
   bar.innerHTML = `<button data-act="leave">→ יציאה</button><h1>${esc(form.title)}</h1>
     <span class="saved" id="saved" role="status">נשמר במכשיר ✓</span>
+    <button data-act="preview">תצוגה מקדימה</button>
     <button class="main" data-act="print">שמירה כ-PDF / הדפסה</button>`;
   app.innerHTML = `
     <div class="tools">${db.children.length ? `<select id="childPick" aria-label="בחירת ילד שמור">
@@ -610,6 +643,12 @@ function refreshAge(e){
 }
 
 app.addEventListener('input', ev => {
+  const ct = ev.target.closest('[data-ct]');
+  if(ct && view.name === 'fill'){
+    const e = currentEntry(), [g, key] = ct.dataset.ct.split('|'), t = e.values[g + '_t'] = e.values[g + '_t'] || {};
+    if(ct.value.trim()) t[key] = ct.value; else delete t[key];
+    grow(ct); e.updated = Date.now(); save(); return;
+  }
   const el = ev.target.closest('[data-f]'); if(!el || view.name !== 'fill') return;
   const e = currentEntry(); e.values[el.dataset.f] = el.value; e.updated = Date.now();
   if(el.tagName === 'TEXTAREA') grow(el);
@@ -636,6 +675,9 @@ function pickChild(id){
   save();
 }
 app.addEventListener('click', ev => {
+  const w = ev.target.closest('[data-wm]');
+  if(w){ const id = w.dataset.wm; writeMode.has(id) ? writeMode.delete(id) : writeMode.add(id);
+    const y = scrollY; renderFill(); scrollTo(0, y); return; }
   const m = ev.target.closest('.mk');
   if(m){   // סימון בטבלה: לחיצה מסמנת, לחיצה נוספת מבטלת. סימון אחד בכל שורה.
     const e = currentEntry(), g = m.dataset.g, on = m.getAttribute('aria-pressed') !== 'true';
@@ -647,7 +689,7 @@ app.addEventListener('click', ev => {
   }
   const o = ev.target.closest('.opt'); if(!o) return;
   const box = o.closest('[data-pick]'), e = currentEntry();
-  const b = formById(e.formId).blocks.find(x => x.id === box.dataset.pick);
+  const b = {id: box.dataset.pick, multi: box.dataset.multi === '1'};
   const on = o.getAttribute('aria-pressed') !== 'true';
   if(!b.multi) box.querySelectorAll('.opt').forEach(x => x.setAttribute('aria-pressed','false'));
   o.setAttribute('aria-pressed', on);
@@ -696,6 +738,8 @@ document.addEventListener('click', ev => {
   else if(act === 'new') newEntry(id);
   else if(act === 'open') go({name:'fill', id});
   else if(act === 'print') printPdf();
+  else if(act === 'preview') openPreview();
+  else if(act === 'closePreview') closePreview();
   else if(act === 'leave') document.getElementById('leave').showModal();
   else if(act === 'stay') document.getElementById('leave').close();
   else if(act === 'leaveOk'){ document.getElementById('leave').close(); go({name:'home'}); }
@@ -758,7 +802,14 @@ function buildScan(){
       const row = g.rows[r], yn = block.rows[r].yn; if(!row) continue;
       const cx = (yn ? g.ynCols : g.cols)[c], h = row[1] - row[0];
       if(yn) box([g.p, cx-2.3, row[0]+0.15, 4.6, h-0.3], 'ring', '');
-      else box([g.p, cx-3, row[0], 6, h], 'xm', '✕');
+      else if(!(e.values[id + '_t'] || {})[r + '_' + c]) box([g.p, cx-3, row[0], 6, h], 'xm', '✕');
+    }
+    // טקסט שנכתב בתוך משבצת של טבלה
+    const step = Math.min(...g.cols.slice(1).map((c, k) => Math.abs(c - g.cols[k])), 14) * 0.92;
+    for(const [key, t] of Object.entries(e.values[id + '_t'] || {})){
+      const [r, c] = key.split('_').map(Number), row = g.rows[r]; if(!row || !t) continue;
+      const cx = (block.rows[r].yn ? g.ynCols : g.cols)[c], wdt = block.rows[r].yn ? 8 : step;
+      box([g.p, cx - wdt/2, row[0] + 0.12, wdt, row[1] - row[0] - 0.24], 'sv small cell', `<span>${esc(t)}</span>`);
     }
   }
   scanBox.querySelectorAll('.ov').forEach((ov, i) => ov.innerHTML = out[i].join(''));
@@ -776,11 +827,33 @@ function buildScan(){
   const imgs = [...scanBox.querySelectorAll('img')];
   document.body.classList.toggle('scanprint', imgs.every(i => i.complete && i.naturalWidth > 0));
 }
+/* ---------- תצוגה מקדימה: אותם דפים שיודפסו, מוקטנים לרוחב המסך, נפתחים בעמוד שממלאים עכשיו ---------- */
+const pvBar = document.getElementById('pvbar');
+function openPreview(){
+  buildScan();
+  if(!document.body.classList.contains('scanprint')){ alert('התצוגה המקדימה עוד נטענת. נסי שוב בעוד רגע.'); return; }
+  // העמוד שממלאים עכשיו: מעבר העמוד האחרון שמעל אמצע המסך
+  let page = 1;
+  app.querySelectorAll('.pagebreak').forEach((d, i) => { if(d.getBoundingClientRect().top < innerHeight/2) page = i + 2; });
+  const pageW = scanBox.firstElementChild.offsetWidth;
+  scanBox.style.setProperty('--pvzoom', Math.min(1, (innerWidth - 16) / pageW));
+  document.body.classList.add('preview');
+  pvBar.querySelector('span').textContent = `תצוגה מקדימה · עמוד ${page} מתוך ${scanBox.children.length}`;
+  const target = scanBox.children[page - 1];
+  if(target){ target.scrollIntoView({block:'start'}); scanBox.scrollTop -= 62; }
+}
+function closePreview(){ document.body.classList.remove('preview'); }
+scanBox.addEventListener('scroll', () => {
+  if(!document.body.classList.contains('preview')) return;
+  let n = 1; [...scanBox.children].forEach((c, i) => { if(c.getBoundingClientRect().top < innerHeight/2) n = i + 1; });
+  pvBar.querySelector('span').textContent = `תצוגה מקדימה · עמוד ${n} מתוך ${scanBox.children.length}`;
+});
+document.addEventListener('keydown', ev => { if(ev.key === 'Escape') closePreview(); });
 // בחלון ההדפסה בוחרים "שמירה כ-PDF". שם הקובץ נקבע לפי שם הילד.
 function printPdf(){
   const e = currentEntry(), old = document.title;
   document.title = `${formById(e.formId).title} - ${e.values.childName || ''}`.replace(/[\\/:*?"<>|]/g,'-');
-  buildScan();
+  closePreview(); buildScan();
   window.print();
   setTimeout(() => document.title = old, 1000);
 }
