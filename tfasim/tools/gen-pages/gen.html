@@ -39,7 +39,7 @@ function Hl(x1,x2,y,wt){const d=document.createElement('div');d.className='hl';d
 function Vl(x,y1,y2){const d=document.createElement('div');d.className='vl';d.style.cssText=`left:${x}%;top:${y1}%;height:${y2-y1}%`;pg.append(d);}
 function grid(xs,ys){xs.forEach(x=>Vl(x,ys[0],ys.at(-1)));ys.forEach(y=>Hl(xs[0],xs.at(-1),y));Hl(xs[0],xs.at(-1),ys.at(-1));}
 function header(){
-  const im=new Image();im.src='logo.png';im.style.cssText='left:10.5%;top:4.2%;width:22%';pg.append(im);
+  const im=new Image();im.src='logo.png';im.style.cssText='left:10.8%;top:4.5%;width:20.5%';pg.append(im);
   T(R,6.8,'היחידה להתפתחות הילד','unit');T(R,8.4,'מחוז הצפון','unit');
 }
 function pageNo(n){T(12.6,93.9,String(n),'body',{k:.9});}
