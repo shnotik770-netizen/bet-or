@@ -40,6 +40,11 @@ main{max-width:900px;margin:0 auto;padding:16px}
 .list b{font-weight:600}
 h3{font-size:15px;margin:14px 0 0;color:var(--muted);font-weight:600}
 a.btn{text-decoration:none;display:inline-block}
+.ftitle{background:none;border:0;padding:0;font:inherit;font-weight:700;color:inherit;text-align:start;display:inline-flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ftitle:hover{color:var(--accent)}
+.ftitle:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.ftitle .chev{color:var(--accent);font-size:14px;width:12px}
+.ftitle .count{font-size:13px;font-weight:500;color:var(--muted);background:var(--soft);border-radius:10px;padding:1px 9px}
 .search{display:block;margin-bottom:14px}
 .search span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
 .search input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 14px;background:#fff;font-size:17px}
@@ -506,18 +511,22 @@ function formCards(q){
   if(!forms.length) return `<div class="card"><p class="muted">לא נמצא טופס שמתאים לחיפוש "${esc(q)}".</p></div>`;
   return forms.map(f => {
     const mine = db.entries.filter(e => e.formId === f.id).sort((a,b) => b.updated - a.updated);
-    return `<div class="card"><div class="row"><div class="grow"><h2>${esc(f.title)}</h2>
+    const open = openForms.has(f.id);
+    return `<div class="card"><div class="row"><div class="grow">
+        <h2><button type="button" class="ftitle" data-toggle="${f.id}" aria-expanded="${open}" aria-controls="saved-${f.id}">
+          <span class="chev" aria-hidden="true">${open ? '▾' : '◂'}</span>${esc(f.title)}<span class="count">${mine.length} שמורים</span></button></h2>
         <div class="muted">${esc(f.source)}${f.scan ? ' · ' + f.scan.pages.length + ' עמודים' : ''}</div></div>
         <button class="btn" data-act="new" data-id="${f.id}">מילוי חדש</button>
         </div>
       ${f.scan && f.scan.blank ? `<div class="row blank"><span class="muted">טופס ריק:</span>
         <a class="btn ghost small" href="${f.scan.dir}${f.scan.blank}" target="_blank" rel="noopener">הצגה</a>
         <a class="btn ghost small" href="${f.scan.dir}${f.scan.blank}" download="${esc(f.title.replace(/[\\/:*?"<>|]/g,'-'))} - ריק.pdf">הורדה</a></div>` : ''}
-      <h3>טפסים שמורים (${mine.length})</h3>
-      ${mine.length ? `<ul class="list">${mine.map(entryRow).join('')}</ul>` : `<p class="muted">עדיין לא מולאו טפסים מהסוג הזה במכשיר הזה.</p>`}</div>`;
+      <div id="saved-${f.id}" ${open ? '' : 'hidden'}><h3>טפסים שמורים (${mine.length})</h3>
+      ${mine.length ? `<ul class="list">${mine.map(entryRow).join('')}</ul>` : `<p class="muted">עדיין לא מולאו טפסים מהסוג הזה במכשיר הזה.</p>`}</div></div>`;
   }).join('');
 }
 let homeQuery = '';
+const openForms = new Set();   // טפסים שרשימת השמורים שלהם פתוחה (נפתחת בלחיצה על שם הטופס)
 function renderHome(){
   closePreview();
   scanBox.innerHTML = ''; scanBox.dataset.form = ''; document.body.classList.remove('scanprint');
@@ -529,6 +538,12 @@ function renderHome(){
   <div class="card privacy">🔒 כל מה שממלאים נשמר <b>רק במכשיר הזה</b> (בזיכרון של הדפדפן). שום פרט לא נשלח לאתר או לאף אחד אחר.
     טופס שמולא במחשב לא יופיע בטלפון. טופס נשמר כאן ${KEEP_DAYS} יום מהעריכה האחרונה ואז נמחק אוטומטית, ולכן כדאי לשמור אותו כ-PDF בסיום.</div>`;
 }
+app.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-toggle]'); if(!t) return;
+  const id = t.dataset.toggle; openForms.has(id) ? openForms.delete(id) : openForms.add(id);
+  document.getElementById('forms').innerHTML = formCards(homeQuery);
+  const again = document.querySelector(`[data-toggle="${id}"]`); if(again) again.focus();
+});
 app.addEventListener('input', ev => {
   if(ev.target.id !== 'q') return;
   homeQuery = ev.target.value; document.getElementById('forms').innerHTML = formCards(homeQuery);
