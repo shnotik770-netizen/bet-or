@@ -1,0 +1,116 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:D;font-weight:400;font-display:block;src:url(node_modules/@fontsource/miriam-libre/files/miriam-libre-hebrew-400-normal.woff2)}
+@font-face{font-family:D;font-weight:700;src:url(node_modules/@fontsource/miriam-libre/files/miriam-libre-hebrew-700-normal.woff2)}
+@font-face{font-family:D;font-weight:400;font-display:block;src:url(node_modules/@fontsource/david-libre/files/david-libre-hebrew-400-normal.woff2)}
+@font-face{font-family:D;font-weight:700;src:url(node_modules/@fontsource/david-libre/files/david-libre-hebrew-700-normal.woff2)}
+html,body{margin:0;background:#fff}
+#pg{position:relative;width:1240px;height:1754px;overflow:hidden;background:#fff;color:#000}
+#pg>*{position:absolute}
+.t{white-space:nowrap;line-height:1;transform:translateY(-100%);direction:rtl}
+.t>span{display:inline-block}
+.body{font-family:D;font-weight:400}
+.bi{font-family:D;font-weight:700;font-style:oblique 10deg}
+.b{font-family:D;font-weight:700}
+.it{font-style:oblique 10deg}
+.title{font-family:D;font-weight:700;font-style:oblique 10deg}
+.unit{font-family:D;font-weight:400;font-style:oblique 10deg}
+.hl{height:0;border-top:1.6px solid #000}
+.vl{width:0;border-left:1.6px solid #000}
+#scan{inset:0;width:100%;height:100%;opacity:.45;mix-blend-mode:multiply;filter:sepia(1) saturate(8) hue-rotate(300deg)}
+</style></head><body><div id="pg"></div>
+<script>
+const q=new URLSearchParams(location.search), P=+q.get('p')||1, DBG=q.get('debug');
+const pg=document.getElementById('pg'), W=1240, H=1754;
+const R=91.5;                       // right text margin (%)
+const SIZE={};                      // px font sizes per style, fitted below
+const boxes={};                     // measured rects of keyed spans (for ring positions)
+function measure(cls,text){const s=document.createElement('span');s.className='t '+cls;s.style.cssText='position:absolute;visibility:hidden;font-size:100px';s.textContent=text;document.body.append(s);const w=s.getBoundingClientRect().width;s.remove();return w;}
+function fit(cls,text,wPct){SIZE[cls]=100*(wPct/100*W)/measure(cls,text);}
+// baseline offset: text box bottom (line-height 1) sits ~0.22em below the baseline
+function T(x,y,text,cls='body',o={}){
+  const d=document.createElement('div');d.className='t '+cls+(o.it?' it':'');
+  const fs=(o.size||SIZE[o.like||cls])*(o.k||1);
+  d.style.cssText=`right:${100-x}%;top:calc(${y}% + ${fs*0.22}px);font-size:${fs}px`;
+  if(Array.isArray(text)) text.forEach(([k,s,c])=>{const sp=document.createElement('span');sp.textContent=s;if(c)sp.className=c;if(k)sp.dataset.k=k;sp.style.whiteSpace='pre';d.append(sp);});
+  else d.textContent=text;
+  pg.append(d);return d;}
+function Hl(x1,x2,y,wt){const d=document.createElement('div');d.className='hl';d.style.cssText=`left:${x1}%;width:${x2-x1}%;top:${y}%`+(wt?`;border-top-width:${wt}px`:'');pg.append(d);}
+function Vl(x,y1,y2){const d=document.createElement('div');d.className='vl';d.style.cssText=`left:${x}%;top:${y1}%;height:${y2-y1}%`;pg.append(d);}
+function grid(xs,ys){xs.forEach(x=>Vl(x,ys[0],ys.at(-1)));ys.forEach(y=>Hl(xs[0],xs.at(-1),y));Hl(xs[0],xs.at(-1),ys.at(-1));}
+function header(){
+  const im=new Image();im.src='logo.png';im.style.cssText='left:10.5%;top:4.2%;width:22%';pg.append(im);
+  T(R,6.8,'היחידה להתפתחות הילד','unit');T(R,8.4,'מחוז הצפון','unit');
+}
+function pageNo(n){T(12.6,93.9,String(n),'body',{k:.9});}
+function run(){
+  fit('body','על מנת לקבל התרשמות מלאה על הילד אשר הופנה אלינו להערכה, ולשם קביעת החלטות טיפוליות,',71.5);
+  fit('bi','משמעת ויכולת לקבל גבולות',21.8); SIZE.b=SIZE.bi;
+  fit('title','שאלון לגננת/מטפלת לילדים בני 3-6',39.7);
+  fit('unit','היחידה להתפתחות הילד',15.8);
+  header();
+  if(P===1){
+    T(82.7,13.3,'שאלון לגננת/מטפלת לילדים בני 3-6','title');
+    T(R,15.75,'השאלון מנוסח בלשון זכר אך מיועד גם לבנים וגם לבנות','body',{k:.86});
+    T(R,21.5,'לכבוד הגננת/המטפלת,','body',{it:1});
+    ['על מנת לקבל התרשמות מלאה על הילד אשר הופנה אלינו להערכה, ולשם קביעת החלטות טיפוליות,',
+     'חשובה לנו מאוד חוות דעתך. נודה לך על מילוי השאלון תוך כדי תאור תפקודו של הילד בכל סעיף .',
+     'אנא מלאי את השאלון במלואו ,יש למלא את הטפסים בכתב גדול וברור ובעט בלבד .',
+     'במידה והשאלה אינה רלוונטית לגיל הילד, אנא צייני זאת.'].forEach((s,i)=>T(R,23.95+i*1.98,s));
+    // child table
+    const a=[32.7,34.8,36.9];
+    [a[0],a[1],a[2]].forEach(y=>Hl(15.1,86.8,y));Vl(15.1,a[0],a[2]);Vl(86.8,a[0],a[2]);Vl(51.2,a[0],a[2]);Vl(62.3,a[0],a[1]);
+    T(86,34.25,'שם הילד:','bi');T(61.6,34.25,'גיל:','bi');T(50.5,34.25,'תאריך מילוי השאלון:','bi');
+    T(86,36.35,'ת.ז.:','bi');T(50.5,36.35,'תאריך לידה:','bi');
+    // setting table
+    const ys=[41.1,43.2,45.3,47.3,49.4,51.5,53.6];
+    ys.forEach(y=>Hl(10.8,R+.3,y));Vl(10.8,ys[0],ys[6]);Vl(R+.3,ys[0],ys[6]);Vl(51.1,ys[0],ys[5]);
+    const L=[['שם הגננת/המטפלת:','טלפון:'],['שם המסגרת החינוכית:','כתובת המסגרת החינוכית:'],['גן/מעון/משפחתון/מטפלת אישית','חינוך רגיל/חינוך מיוחד'],
+      ['גיל הילדים במסגרת:','מספר הילדים במסגרת:'],['משך ההיכרות עם הילד:','שעות פעילות המסגרת:'],['האם מקבל סיוע במסגרת החינוכית (פרטי):']];
+    L.forEach((r,i)=>{T(R-.5,ys[i]+1.55,r[0]);if(r[1])T(50.4,ys[i]+1.55,r[1]);});
+    T(R,58.95,'האם לדעתך הילד זקוק לעזרה מקצועית?');Hl(16.5,54.3,59.05);
+    T(R,62.75,[[0,'באילו תחומ/ים מקצועי/ים נדרשת לילד עזרה?'],[0,'(נא להקיף בעיגול את התחומים הרלוונטיים):','it']]);
+    [['רופא התפתחותי',R],['פיזיותרפיה',78.6],['קלינאות-תקשורת',67.6],['ריפוי-בעיסוק',52.4],['פסיכולוגיה',40.6],['אחר',29.2]]
+      .forEach(([s,x])=>T(x,64.9,[['fields|'+s,s]],'bi',{k:.84}));
+    T(R,68.8,'האם ידוע לך על גורמים טיפוליים נוספים מעורבים: (פסיכותרפיה, רווחה וכו\')');Hl(16,R+.3,70.8);
+    T(R,78.9,'התרשמות כללית:','bi');
+    T(R,80.75,'מבקר סדיר במסגרת: כן/לא פרט');Hl(16.3,68.6,80.9);
+    T(R,82.8,'הופעה חיצונית (כולל לבוש, ניקיון, אפיונים מיוחדים)');Hl(16.3,53,82.95);
+    [84.9,87,89.05,91.1].forEach(y=>Hl(16.3,R+.3,y));
+    pageNo(1);
+  }
+  if(P===2){
+    T(R,10.1,'בסעיפים הבאים, אנא תארי את תפקודו/ה של הילד/ה במסגרת. אנא סמני את');
+    T(R,12.1,'ההתנהגות המתאימה ופרטי בהתאם לצורך');
+    T(R,16.45,[[0,'מצב רוח כללי ותיאור התנהגויות אופייניות: '],[0,'(הקיפי את המתאים)']],'bi');
+    const M=[['עליז ושמח','מצב רוח נוח','מגיע בשמחה לגן','נפרד בקלות','משתף פעולה'],
+      ['שינויים קיצוניים במצב הרוח','עצוב או מדוכדך','מתקשה להיפרד בבוקר','מרבה לבכות'],
+      ['מוצץ אצבע או מוצץ','עקשן','נמצא בחוסר שקט','מגלה פחדים וחרדות','ביישן']];
+    M.forEach((row,i)=>{const parts=[];row.forEach((s,j)=>{parts.push(['mood|'+s,s]);if(!(i===2&&j===row.length-1))parts.push([0,'/ ']);});T(R,18.65+i*2.0,parts,'body',{it:1});});
+    T(R,24.7,'אחר, אנא פרטי','b');Hl(11.5,79,24.8);Hl(11.5,R+.3,26.7);
+    T(R,28.75,'משמעת ויכולת לקבל גבולות','bi');Hl(11.5,68.8,28.9);Hl(11.5,R+.3,30.8);
+    T(R,34.7,'עצמאות ותלות:','bi');
+    grid([17,28.2,40,51.6,85.8],[36.1,38.2,40.3,42.3,44.5]);
+    T(50.8,37.6,'עצמאי','bi',{k:.9});T(39.2,37.6,'לפעמים תלוי','bi',{k:.9});T(27.4,37.6,'תלוי במבוגר','bi',{k:.9});
+    ['עצמאי במשימות','אכילה עם כפית ומזלג','הרגלי ניקיון (שירותים, שטיפת ידיים)'].forEach((s,i)=>T(85,[39.75,41.8,43.9][i],s));
+    T(R,47.55,'פרטי:');Hl(11.5,87,47.7);
+    T(R,52.0,'אכילה:','bi');
+    T(R,54.4,'מהן שעות הארוחות? האם אוכל את המוגש בגן או מביא אוכל מהבית?');Hl(14,41,54.5);Hl(14,R+.3,56.4);
+    T(R,58.45,'אילו סוגי אוכל מעדיף/מסרב לאכול?');Hl(14,65.2,58.5);
+    T(R,60.45,'האם קיים ריור?');Hl(14,79.6,60.5);
+    T(R,62.45,'פרטי:');Hl(14,87,62.6);
+    T(R,67.0,'תחושה:','bi');
+    const ty=[68.3,70.5,72.6,74.7,76.8,78.9,81.0,83.0,85.1,87.3];
+    grid([19.6,31.7,43.5,55.4,84.4],ty);
+    T(54.7,69.8,'נהנה','b',{k:.9});T(42.8,69.8,'מסכים','b',{k:.9});T(31,69.8,'נמנע','b',{k:.9});
+    ['משחק בחול','משחק בבצק/פלסטלינה','צבעי ידיים','דבק','מגע עם מים','מגע עם ילדים ומבוגרים','עמידה בתור עם ילדים נוספים','פעילויות עם רעש (מסיבות/חגים)']
+      .forEach((s,i)=>T(83.6,ty[i+1]+1.6,s));
+    pageNo(2);
+  }
+  pg.querySelectorAll('[data-k]').forEach(s=>{const r=s.getBoundingClientRect();boxes[s.dataset.k]=[P,+(r.left/W*100-.7).toFixed(2),+(r.top/H*100-.35).toFixed(2),+(r.width/W*100+1.4).toFixed(2),+(r.height/H*100+.7).toFixed(2)];});
+  window.BOXES=boxes;
+  if(DBG){const im=new Image();im.id='scan';im.src='../scan/raw-00'+(P-1)+'.jpg';pg.append(im);}
+  window.READY=true;
+}
+Promise.all([document.fonts.load('16px D'),document.fonts.load('700 16px D')]).then(run);
+</script></body></html>
