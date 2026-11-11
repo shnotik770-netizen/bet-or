@@ -29,7 +29,7 @@ main{max-width:900px;margin:0 auto;padding:16px}
 .muted{color:var(--muted);font-size:14px}
 .privacy{background:var(--soft);border-color:#bcd8cc;font-size:14px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.row .grow{flex:1;min-width:0}
+.row .grow{flex:1 1 230px;min-width:0}
 .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600}
 .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
 .btn.small{padding:5px 11px;font-size:14px;font-weight:500}
@@ -38,6 +38,12 @@ main{max-width:900px;margin:0 auto;padding:16px}
 .list li{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line)}
 .list li .grow{flex:1;min-width:150px}
 .list b{font-weight:600}
+h3{font-size:15px;margin:14px 0 0;color:var(--muted);font-weight:600}
+a.btn{text-decoration:none;display:inline-block}
+.search{display:block;margin-bottom:14px}
+.search span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
+.search input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 14px;background:#fff;font-size:17px}
+.search input:focus{outline:2px solid var(--accent);border-color:var(--accent)}
 .set label{display:block;font-size:14px;color:var(--muted);margin-top:10px}
 .set input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
@@ -202,6 +208,7 @@ const FORMS = [{
   id: 'clalit-ganenet-3-6',
   title: 'שאלון לגננת/מטפלת לילדים בני 3-6',
   source: 'כללית – היחידה להתפתחות הילד, מחוז הצפון',
+  tags: ['גננת','מטפלת','התפתחות הילד','קשב וריכוז','קונרס','DSM'],
   sub: 'השאלון מנוסח בלשון זכר אך מיועד גם לבנים וגם לבנות',
   intro: ['לכבוד הגננת/המטפלת,',
     'על מנת לקבל התרשמות מלאה על הילד אשר הופנה אלינו להערכה, ולשם קביעת החלטות טיפוליות, חשובה לנו מאוד חוות דעתך. נודה לך על מילוי השאלון תוך כדי תאור תפקודו של הילד בכל סעיף.',
@@ -211,11 +218,11 @@ const FORMS = [{
   /* מיקום כל שדה על דפי הסריקה, באחוזים מגודל העמוד: [עמוד, x, y, רוחב, גובה, אפשרויות].
      lh = גובה שורה (לשדה רב-שורתי), indent = הזחת השורה הראשונה (כשהתשובה מתחילה אחרי השאלה). */
   scan: {
-    dir: 'scans/clalit-ganenet-3-6/', pages: ['p1.jpg','p2.jpg','p3.jpg','p4.jpg','p5.jpg','p6.jpg','p7.jpg','p8.jpg'],
+    dir: 'scans/clalit-ganenet-3-6/', pages: ['p1.png','p2.png','p3.png','p4.png','p5.png','p6.png','p7.png','p8.png'], blank: 'blank.pdf',
     // שדות שמודפסים שוב בחלק "קשב וריכוז" (עמודים 7–8) ונלקחים מהפרטים שבעמוד 1
     alias: {c_name:'childName', c_tz:'childTz', c_birth:'birth', c_date:'fillDate'},
     f: {
-      childName:[1,64.2,34.4,10.8,1.9], age:[1,53.4,34.4,6.3,1.9], fillDate:[1,18.2,34.4,17.8,1.9],
+      childName:[1,65.8,34.4,12.6,1.9], age:[1,53.4,34.4,7.2,1.9], fillDate:[1,18.2,34.4,17.8,1.9],
       childTz:[1,53.4,36.5,28.8,1.9], birth:[1,18.2,36.5,23.3,1.9],
       teacher:[1,53.6,42.7,22.4,1.9], phone:[1,14,42.7,32.7,1.9],
       place:[1,53.6,44.8,20.8,1.9], address:[1,14,44.8,19.6,1.9],
@@ -251,15 +258,12 @@ const FORMS = [{
       c_filler:[8,40,64.4,37.5,1.9],
     },
     picks: {
-      fields: {'רופא התפתחותי':[1,80.4,64.4,12.7,1.95],'פיזיותרפיה':[1,70.5,64.4,9.2,1.95],'קלינאות-תקשורת':[1,55.3,64.4,14.1,1.95],
-        'ריפוי-בעיסוק':[1,43.4,64.4,10.8,1.95],'פסיכולוגיה':[1,33.1,64.4,9.2,1.95],'אחר':[1,27.9,64.4,4.1,1.95]},
-      mood: {'עליז ושמח':[2,84.8,18.1,7.2,2],'מצב רוח נוח':[2,73.4,18.1,11.3,2],'מגיע בשמחה לגן':[2,60.6,18.1,12.8,2],'נפרד בקלות':[2,49.4,18.1,11.2,2],'משתף פעולה':[2,39.5,18.1,9.9,2],
-        'שינויים קיצוניים במצב הרוח':[2,73.6,20.15,18.3,2],'עצוב או מדוכדך':[2,58.9,20.15,14.2,2],'מתקשה להיפרד בבוקר':[2,40,20.15,17.6,2],'מרבה לבכות':[2,28,20.15,11.5,2],
-        'מוצץ אצבע או מוצץ':[2,75.3,22.1,16.6,2],'עקשן':[2,69.9,22.1,5.3,2],'נמצא בחוסר שקט':[2,56.4,22.1,13.5,2],'מגלה פחדים וחרדות':[2,41.2,22.1,15.2,2],'ביישן':[2,35.8,22.1,5.4,2]},
-      nextYear: {'גן':[6,54.5,72.9,2.3,2],'גן משולב':[6,46.6,72.9,8.2,2],'גן טיפולי':[6,38.8,72.9,8,2],'אחר':[6,34.2,72.9,4.6,2]},
-      c_repeat: {'כן':[7,84.9,21.2,2.6,2],'לא':[7,82.5,21.2,2.6,2]},
-      c_meds: {'כן':[7,49,21.2,2.7,2],'לא':[7,46.1,21.2,2.9,2]},
-      c_who: {'אם':[7,27.8,21.2,3.1,2],'אב':[7,24.9,21.2,2.6,2],'מורה':[7,21,21.2,3.6,2],'אחר':[7,16.2,21.2,4.4,2]},
+      fields: {'רופא התפתחותי':[1, 79.09, 64.32, 14.11, 2.08],'פיזיותרפיה':[1, 69.69, 64.32, 10.21, 2.08],'קלינאות-תקשורת':[1, 54.14, 64.32, 15.46, 2.08],'ריפוי-בעיסוק':[1, 42.33, 64.32, 11.97, 2.08],'פסיכולוגיה':[1, 32.11, 64.32, 10.29, 2.08],'אחר':[1, 27.34, 64.32, 4.87, 2.08]},
+      mood: {'עליז ושמח':[2, 83.18, 18.26, 8.92, 1.97],'מצב רוח נוח':[2, 73.55, 18.26, 10.17, 1.97],'מגיע בשמחה לגן':[2, 60.97, 18.26, 13.1, 1.97],'נפרד בקלות':[2, 51.72, 18.26, 9.79, 1.97],'משתף פעולה':[2, 41.71, 18.26, 10.54, 1.97],'שינויים קיצוניים במצב הרוח':[2, 70.07, 20.36, 22.03, 1.97],'עצוב או מדוכדך':[2, 58, 20.36, 12.6, 1.97],'מתקשה להיפרד בבוקר':[2, 40.51, 20.36, 17.65, 1.97],'מרבה לבכות':[2, 30.77, 20.36, 10.27, 1.97],'מוצץ אצבע או מוצץ':[2, 76.84, 22.26, 15.26, 1.97],'עקשן':[2, 72.15, 22.26, 5.23, 1.97],'נמצא בחוסר שקט':[2, 58.58, 22.26, 14.11, 1.97],'מגלה פחדים וחרדות':[2, 43.09, 22.26, 16.02, 1.97],'ביישן':[2, 38.25, 22.26, 5.36, 1.97]},
+      nextYear: {'גן':[6, 58.32, 73.06, 2.69, 1.97],'גן משולב':[6, 51.08, 73.06, 7.77, 1.97],'גן טיפולי':[6, 43.69, 73.06, 7.92, 1.97],'אחר':[6, 39.64, 73.06, 4.59, 1.97]},
+      c_repeat: {'כן':[7, 85.41, 21.47, 2.84, 1.89],'לא':[7, 83.01, 21.47, 3.33, 1.89]},
+      c_meds: {'כן':[7, 49.7, 21.47, 2.84, 1.89],'לא':[7, 47.31, 21.47, 3.33, 1.89]},
+      c_who: {'אם':[7, 28.11, 21.47, 3.54, 1.89],'אב':[7, 25.37, 21.47, 3.32, 1.89],'מורה':[7, 21.01, 21.47, 4.95, 1.89],'אחר':[7, 17.21, 21.47, 4.39, 1.89]},
     },
     grids: {
       indep: {p:2, cols:[46.2,34.5,22.7], rows:[[39.3,41.3],[41.3,43.4],[43.4,45.6]]},
@@ -466,25 +470,45 @@ function render(){
   renderHome();
 }
 
+function entryRow(e){
+  const left = Math.max(1, Math.ceil((e.updated + KEEP_DAYS*864e5 - Date.now())/864e5));
+  return `<li><div class="grow"><b>${esc(e.values.childName || 'ללא שם')}</b>
+      <div class="muted">${heDate(e.values.fillDate)} · יימחק בעוד ${left} ימים</div></div>
+    <button class="btn small" data-act="open" data-id="${e.id}">פתיחה</button>
+    <button class="btn ghost small" data-act="dup" data-id="${e.id}" title="טופס חדש לילד אחר, עם פרטי הגן">חדש כמוהו</button>
+    <button class="btn danger small" data-act="del" data-id="${e.id}">מחיקה</button></li>`;
+}
+function formCards(q){
+  q = q.trim().toLowerCase();
+  const hit = f => !q || [f.title, f.source, f.sub, ...(f.tags || [])].join(' ').toLowerCase().includes(q) ||
+    db.entries.some(e => e.formId === f.id && (e.values.childName || '').toLowerCase().includes(q));
+  const forms = FORMS.filter(hit);
+  if(!forms.length) return `<div class="card"><p class="muted">לא נמצא טופס שמתאים לחיפוש "${esc(q)}".</p></div>`;
+  return forms.map(f => {
+    const mine = db.entries.filter(e => e.formId === f.id).sort((a,b) => b.updated - a.updated);
+    return `<div class="card"><div class="row"><div class="grow"><h2>${esc(f.title)}</h2>
+        <div class="muted">${esc(f.source)}${f.scan ? ' · ' + f.scan.pages.length + ' עמודים' : ''}</div></div>
+        <button class="btn" data-act="new" data-id="${f.id}">מילוי חדש</button>
+        ${f.scan && f.scan.blank ? `<a class="btn ghost" href="${f.scan.dir}${f.scan.blank}" target="_blank" rel="noopener">טופס ריק לדוגמה</a>` : ''}</div>
+      <h3>טפסים שמורים (${mine.length})</h3>
+      ${mine.length ? `<ul class="list">${mine.map(entryRow).join('')}</ul>` : `<p class="muted">עדיין לא מולאו טפסים מהסוג הזה במכשיר הזה.</p>`}</div>`;
+  }).join('');
+}
+let homeQuery = '';
 function renderHome(){
   scanBox.innerHTML = ''; scanBox.dataset.form = ''; document.body.classList.remove('scanprint');
   bar.innerHTML = `<h1>טפסי הגן</h1><button data-act="settings">פרטי הגן וגיבוי</button>`;
-  const entries = [...db.entries].sort((a,b) => b.updated - a.updated);
   app.innerHTML = `
+  <label class="search"><span>חיפוש טופס</span>
+    <input id="q" type="search" placeholder="שם הטופס, הגוף ששלח אותו, או שם ילד" value="${esc(homeQuery)}" autocomplete="off"></label>
+  <div id="forms">${formCards(homeQuery)}</div>
   <div class="card privacy">🔒 כל מה שממלאים נשמר <b>רק במכשיר הזה</b> (בזיכרון של הדפדפן). שום פרט לא נשלח לאתר או לאף אחד אחר.
-    טופס שמולא במחשב לא יופיע בטלפון. טופס נשמר כאן ${KEEP_DAYS} יום מהעריכה האחרונה ואז נמחק אוטומטית, ולכן כדאי לשמור אותו כ-PDF בסיום.</div>
-  <div class="card"><h2>טופס חדש</h2>
-    <ul class="list">${FORMS.map(f => `<li><div class="grow"><b>${esc(f.title)}</b><div class="muted">${esc(f.source)}</div></div>
-      <button class="btn" data-act="new" data-id="${f.id}">מילוי</button></li>`).join('')}</ul></div>
-  <div class="card"><h2>טפסים שמולאו</h2>
-    ${entries.length ? `<ul class="list">${entries.map(e => { const f = formById(e.formId); return `<li>
-      <div class="grow"><b>${esc(e.values.childName || 'ללא שם')}</b>
-        <div class="muted">${esc(f ? f.title : e.formId)} · ${heDate(e.values.fillDate)} · יימחק בעוד ${Math.max(1, Math.ceil((e.updated + KEEP_DAYS*864e5 - Date.now())/864e5))} ימים</div></div>
-      <button class="btn small" data-act="open" data-id="${e.id}">פתיחה</button>
-      <button class="btn ghost small" data-act="dup" data-id="${e.id}" title="אותו טופס לילד אחר, עם פרטי הגן">שכפול</button>
-      <button class="btn danger small" data-act="del" data-id="${e.id}">מחיקה</button></li>`; }).join('')}</ul>`
-      : `<p class="muted">עדיין לא מולאו טפסים.</p>`}</div>`;
+    טופס שמולא במחשב לא יופיע בטלפון. טופס נשמר כאן ${KEEP_DAYS} יום מהעריכה האחרונה ואז נמחק אוטומטית, ולכן כדאי לשמור אותו כ-PDF בסיום.</div>`;
 }
+app.addEventListener('input', ev => {
+  if(ev.target.id !== 'q') return;
+  homeQuery = ev.target.value; document.getElementById('forms').innerHTML = formCards(homeQuery);
+});
 
 function newEntry(formId, from){
   const form = formById(formId), values = {};
