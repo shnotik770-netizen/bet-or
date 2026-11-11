@@ -519,8 +519,8 @@ function formCards(q){
         <button class="btn" data-act="new" data-id="${f.id}">מילוי חדש</button>
         </div>
       ${f.scan && f.scan.blank ? `<div class="row blank"><span class="muted">טופס ריק:</span>
-        <a class="btn ghost small" href="${f.scan.dir}${f.scan.blank}" target="_blank" rel="noopener">הצגה</a>
-        <a class="btn ghost small" href="${f.scan.dir}${f.scan.blank}" download="${esc(f.title.replace(/[\\/:*?"<>|]/g,'-'))} - ריק.pdf">הורדה</a></div>` : ''}
+        <button class="btn ghost small" data-act="viewBlank" data-id="${f.id}">הצגה</button>
+        <button class="btn ghost small" data-act="dlBlank" data-id="${f.id}">הורדה</button></div>` : ''}
       <div id="saved-${f.id}" ${open ? '' : 'hidden'}><h3>טפסים שמורים (${mine.length})</h3>
       ${mine.length ? `<ul class="list">${mine.map(entryRow).join('')}</ul>` : `<p class="muted">עדיין לא מולאו טפסים מהסוג הזה במכשיר הזה.</p>`}</div></div>`;
   }).join('');
@@ -755,6 +755,8 @@ document.addEventListener('click', ev => {
   else if(act === 'print') printPdf();
   else if(act === 'preview') openPreview();
   else if(act === 'closePreview') closePreview();
+  else if(act === 'viewBlank') openBlank(id);
+  else if(act === 'dlBlank') downloadBlank(id);
   else if(act === 'leave') document.getElementById('leave').showModal();
   else if(act === 'stay') document.getElementById('leave').close();
   else if(act === 'leaveOk'){ document.getElementById('leave').close(); go({name:'home'}); }
@@ -857,11 +859,33 @@ function openPreview(){
   const target = scanBox.children[page - 1];
   if(target){ target.scrollIntoView({block:'start'}); scanBox.scrollTop -= 62; }
 }
-function closePreview(){ document.body.classList.remove('preview'); }
+function closePreview(){
+  document.body.classList.remove('preview');
+  if((scanBox.dataset.form || '').endsWith(':blank')){ scanBox.innerHTML = ''; scanBox.dataset.form = ''; }
+  const main = document.querySelector('#pvbar .main'); main.dataset.act = 'print'; main.textContent = 'שמירה כ-PDF'; delete main.dataset.id;
+}
+// טופס ריק לדוגמה: אותה חלונית תצוגה, בלי תשובות
+function openBlank(formId){
+  const f = formById(formId), sc = f.scan;
+  scanBox.dataset.form = formId + ':blank';
+  scanBox.innerHTML = sc.pages.map(x => `<div class="scanpage"><img src="${sc.dir}${x}" alt=""></div>`).join('');
+  scanBox.style.setProperty('--pvzoom', Math.min(1, (innerWidth - 16) / scanBox.firstElementChild.offsetWidth));
+  document.body.classList.add('preview'); scanBox.scrollTop = 0;
+  pvBar.querySelector('span').textContent = `טופס ריק · עמוד 1 מתוך ${sc.pages.length}`;
+  const main = pvBar.querySelector('.main'); main.dataset.act = 'dlBlank'; main.dataset.id = formId; main.textContent = 'הורדה';
+}
+// הורדה אמיתית של הקובץ (ולא פתיחה בלשונית חדשה)
+async function downloadBlank(formId){
+  const f = formById(formId), url = f.scan.dir + f.scan.blank, name = f.title.replace(/[\\/:*?"<>|]/g, '-') + ' - ריק.pdf';
+  const a = document.createElement('a'); a.download = name;
+  try{ a.href = URL.createObjectURL(await (await fetch(url)).blob()); }catch(err){ a.href = url; }
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => { if(a.href.startsWith('blob:')) URL.revokeObjectURL(a.href); }, 4000);
+}
 scanBox.addEventListener('scroll', () => {
   if(!document.body.classList.contains('preview')) return;
   let n = 1; [...scanBox.children].forEach((c, i) => { if(c.getBoundingClientRect().top < innerHeight/2) n = i + 1; });
-  pvBar.querySelector('span').textContent = `תצוגה מקדימה · עמוד ${n} מתוך ${scanBox.children.length}`;
+  pvBar.querySelector('span').textContent = `${(scanBox.dataset.form || '').endsWith(':blank') ? 'טופס ריק' : 'תצוגה מקדימה'} · עמוד ${n} מתוך ${scanBox.children.length}`;
 });
 document.addEventListener('keydown', ev => { if(ev.key === 'Escape') closePreview(); });
 // בחלון ההדפסה בוחרים "שמירה כ-PDF". שם הקובץ נקבע לפי שם הילד.
